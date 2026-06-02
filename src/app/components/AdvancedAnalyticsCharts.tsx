@@ -1,9 +1,10 @@
 'use client';
+
 import React from 'react';
 import dynamic from 'next/dynamic';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
-import TodoMarker from '@/components/ui/TodoMarker';
+import type { WobaTrendPoint, BattedBallPoint } from '@/services/statcastService';
 
 const WobaAreaChart = dynamic(() => import('@/charts/WobaAreaChart'), {
   ssr: false,
@@ -15,34 +16,45 @@ const BarrelRateBarChart = dynamic(() => import('@/charts/BarrelRateBarChart'), 
   loading: () => <ChartSkeleton height={180} />,
 });
 
-// TODO: Pass real chart data from analyticsService into chart components
-export default function AdvancedAnalyticsCharts() {
-  return (
-    <div className="space-y-3">
-      <TodoMarker
-        pageName="AdvancedAnalytics Charts"
-        description="Connect real time-series data to WobaAreaChart and batted-ball profile data to BarrelRateBarChart."
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2 gap-3">
-        {/* wOBA Trend */}
-        <div className="card-surface p-4">
-          <SectionHeader
-            title="wOBA Trend"
-            subtitle="Rolling 7-day weighted on-base average"
-            className="mb-3"
-          />
-          <WobaAreaChart height={180} />
-        </div>
+interface AdvancedAnalyticsChartsProps {
+  wobaTrend: WobaTrendPoint[];
+  battedBall: BattedBallPoint[];
+  loading: boolean;
+}
 
-        {/* Batted Ball Profile */}
-        <div className="card-surface p-4">
-          <SectionHeader
-            title="Batted Ball Profile"
-            subtitle="Distribution of contact types — current filter"
-            className="mb-3"
-          />
-          <BarrelRateBarChart height={180} />
-        </div>
+export default function AdvancedAnalyticsCharts({
+  wobaTrend,
+  battedBall,
+  loading,
+}: AdvancedAnalyticsChartsProps) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {/* wOBA Trend */}
+      <div className="card-surface p-4">
+        <SectionHeader
+          title="wOBA Trend"
+          subtitle="Rolling weighted on-base average — Statcast 2026"
+          className="mb-3"
+        />
+        {loading ? (
+          <ChartSkeleton height={180} />
+        ) : (
+          <WobaAreaChart data={wobaTrend.length > 0 ? wobaTrend : undefined} height={180} />
+        )}
+      </div>
+
+      {/* Batted Ball Profile */}
+      <div className="card-surface p-4">
+        <SectionHeader
+          title="Batted Ball Profile"
+          subtitle="Contact type distribution — derived from Statcast exit velocity & barrel data"
+          className="mb-3"
+        />
+        {loading ? (
+          <ChartSkeleton height={180} />
+        ) : (
+          <BarrelRateBarChart data={battedBall.length > 0 ? battedBall : undefined} height={180} />
+        )}
       </div>
     </div>
   );

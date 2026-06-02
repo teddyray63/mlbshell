@@ -37,3 +37,13 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
     <div className="animate-pulse bg-muted rounded-md w-full" style={{ height }} />
   );
 }
+
+export function CardSkeleton() {
+  return (
+    <div className="card-surface p-4 flex flex-col gap-2">
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-8 w-28" />
+      <Skeleton className="h-3 w-16" />
+    </div>
+  );
+}

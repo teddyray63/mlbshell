@@ -1,28 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import SectionHeader from '@/components/ui/SectionHeader';
-
 import EmptyState from '@/components/ui/EmptyState';
-import TodoMarker from '@/components/ui/TodoMarker';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ArrowUpDown, ArrowUp, ArrowDown, BarChart2 } from 'lucide-react';
+import type { StatcastPlayer } from '@/services/statcastService';
 
-// TODO: Replace with real player stat rows from analyticsService.fetchAdvancedStats()
-const mockPlayers = [
-  { id: 'player-001', name: 'Manny Ramirez Jr.',  team: 'LAD', pos: 'LF',  pa: 187, avg: '.301', obp: '.388', slg: '.521', woba: '.381', iso: '.220', barrelPct: 14.2, exitVelo: 93.1, kPct: 22.4, bbPct: 12.1, hand: 'R' },
-  { id: 'player-002', name: 'Carlos Mendez',       team: 'HOU', pos: '2B',  pa: 201, avg: '.278', obp: '.341', slg: '.447', woba: '.348', iso: '.169', barrelPct: 9.8,  exitVelo: 90.4, kPct: 19.8, bbPct: 8.7,  hand: 'R' },
-  { id: 'player-003', name: 'Derrick Holloway',    team: 'NYY', pos: 'CF',  pa: 165, avg: '.254', obp: '.318', slg: '.401', woba: '.321', iso: '.147', barrelPct: 7.3,  exitVelo: 88.9, kPct: 28.1, bbPct: 7.2,  hand: 'L' },
-  { id: 'player-004', name: 'Rafael Ortega III',   team: 'ATL', pos: '1B',  pa: 223, avg: '.312', obp: '.401', slg: '.558', woba: '.401', iso: '.246', barrelPct: 18.6, exitVelo: 95.2, kPct: 24.7, bbPct: 13.4, hand: 'R' },
-  { id: 'player-005', name: 'Tomás Vidal',         team: 'SD',  pos: 'SS',  pa: 178, avg: '.289', obp: '.352', slg: '.432', woba: '.344', iso: '.143', barrelPct: 8.1,  exitVelo: 89.7, kPct: 21.3, bbPct: 9.1,  hand: 'S' },
-  { id: 'player-006', name: 'Marcus Webb',         team: 'BOS', pos: 'RF',  pa: 194, avg: '.242', obp: '.299', slg: '.389', woba: '.308', iso: '.147', barrelPct: 6.2,  exitVelo: 87.3, kPct: 31.8, bbPct: 6.8,  hand: 'L' },
-  { id: 'player-007', name: 'Jaime Castillo',      team: 'MIN', pos: 'DH',  pa: 209, avg: '.295', obp: '.365', slg: '.498', woba: '.368', iso: '.203', barrelPct: 12.9, exitVelo: 92.8, kPct: 26.2, bbPct: 10.5, hand: 'R' },
-  { id: 'player-008', name: 'Kevin Ashworth',      team: 'CHC', pos: '3B',  pa: 182, avg: '.268', obp: '.333', slg: '.421', woba: '.332', iso: '.153', barrelPct: 8.9,  exitVelo: 90.1, kPct: 23.5, bbPct: 8.9,  hand: 'R' },
-  { id: 'player-009', name: 'Daisuke Nakamura',    team: 'SEA', pos: 'C',   pa: 141, avg: '.249', obp: '.308', slg: '.378', woba: '.307', iso: '.129', barrelPct: 5.8,  exitVelo: 86.4, kPct: 29.4, bbPct: 7.4,  hand: 'R' },
-  { id: 'player-010', name: 'Elias Fontaine',      team: 'STL', pos: 'LF',  pa: 197, avg: '.307', obp: '.378', slg: '.511', woba: '.375', iso: '.204', barrelPct: 13.7, exitVelo: 92.3, kPct: 20.8, bbPct: 11.8, hand: 'L' },
-];
+interface AdvancedAnalyticsTableProps {
+  players: StatcastPlayer[];
+  loading: boolean;
+}
 
-type SortKey = keyof (typeof mockPlayers)[0];
+type SortKey = keyof StatcastPlayer;
 
 function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 'asc' | 'desc' }) {
   if (col !== sortKey) return <ArrowUpDown size={12} className="text-muted-foreground/40" />;
@@ -31,10 +21,21 @@ function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 
     : <ArrowDown size={12} className="text-primary" />;
 }
 
-export default function AdvancedAnalyticsTable() {
+function fmtStat(val: number | null, decimals = 3, prefix = ''): string {
+  if (val === null) return '—';
+  return `${prefix}${val.toFixed(decimals)}`;
+}
+
+function fmtWoba(val: number | null): string {
+  if (val === null) return '—';
+  return `.${Math.round(val * 1000).toString().padStart(3, '0')}`;
+}
+
+export default function AdvancedAnalyticsTable({ players, loading }: AdvancedAnalyticsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('woba');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [loading] = useState(false);
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 25;
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -43,31 +44,41 @@ export default function AdvancedAnalyticsTable() {
       setSortKey(key);
       setSortDir('desc');
     }
+    setPage(1);
   };
 
-  const sorted = [...mockPlayers].sort((a, b) => {
-    const av = a[sortKey];
-    const bv = b[sortKey];
-    const n = typeof av === 'number' && typeof bv === 'number'
-      ? av - bv
-      : String(av).localeCompare(String(bv));
-    return sortDir === 'asc' ? n : -n;
-  });
+  const sorted = useMemo(() => {
+    return [...players].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      const n = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : String(av).localeCompare(String(bv));
+      return sortDir === 'asc' ? n : -n;
+    });
+  }, [players, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / rowsPerPage));
+  const paginated = sorted.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   const cols: { key: SortKey; label: string; align?: string }[] = [
-    { key: 'name',       label: 'Player' },
-    { key: 'team',       label: 'Team',   align: 'center' },
-    { key: 'pos',        label: 'Pos',    align: 'center' },
-    { key: 'pa',         label: 'PA',     align: 'right' },
-    { key: 'avg',        label: 'AVG',    align: 'right' },
-    { key: 'obp',        label: 'OBP',    align: 'right' },
-    { key: 'slg',        label: 'SLG',    align: 'right' },
-    { key: 'woba',       label: 'wOBA',   align: 'right' },
-    { key: 'iso',        label: 'ISO',    align: 'right' },
-    { key: 'barrelPct',  label: 'Brl%',   align: 'right' },
-    { key: 'exitVelo',   label: 'EV',     align: 'right' },
-    { key: 'kPct',       label: 'K%',     align: 'right' },
-    { key: 'bbPct',      label: 'BB%',    align: 'right' },
+    { key: 'name',            label: 'Player' },
+    { key: 'team',            label: 'Team',   align: 'center' },
+    { key: 'position',        label: 'Pos',    align: 'center' },
+    { key: 'pa',              label: 'PA',     align: 'right' },
+    { key: 'avg',             label: 'AVG',    align: 'right' },
+    { key: 'obp',             label: 'OBP',    align: 'right' },
+    { key: 'slg',             label: 'SLG',    align: 'right' },
+    { key: 'woba',            label: 'wOBA',   align: 'right' },
+    { key: 'xwoba',           label: 'xwOBA',  align: 'right' },
+    { key: 'exitVelocityAvg', label: 'EV',     align: 'right' },
+    { key: 'barrelRate',      label: 'Brl%',   align: 'right' },
+    { key: 'hardHitPct',      label: 'HH%',    align: 'right' },
+    { key: 'kPct',            label: 'K%',     align: 'right' },
+    { key: 'bbPct',           label: 'BB%',    align: 'right' },
   ];
 
   return (
@@ -75,12 +86,13 @@ export default function AdvancedAnalyticsTable() {
       <div className="p-4 border-b border-border flex items-center justify-between">
         <SectionHeader
           title="Player Stat Table"
-          subtitle="Statcast-derived metrics — click column header to sort"
+          subtitle="Live Statcast metrics — click column header to sort"
         />
-        <TodoMarker
-          pageName="AdvancedAnalytics Table"
-          description="Replace mockPlayers with real data from analyticsService"
-        />
+        {!loading && players.length > 0 && (
+          <span className="text-xs text-muted-foreground font-mono-data">
+            {players.length} players · Live
+          </span>
+        )}
       </div>
 
       <div className="overflow-x-auto scrollbar-thin">
@@ -104,27 +116,29 @@ export default function AdvancedAnalyticsTable() {
           </thead>
           <tbody>
             {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
+              ? Array.from({ length: 10 }).map((_, i) => (
                   <TableRowSkeleton key={`skel-row-${i}`} cols={cols.length} />
                 ))
-              : sorted.length === 0
+              : paginated.length === 0
               ? (
                 <tr>
                   <td colSpan={cols.length}>
                     <EmptyState
                       icon={<BarChart2 size={32} />}
                       title="No players found"
-                      description="Adjust your filters or search to find player stat data."
+                      description="Statcast data could not be loaded or no players match the current filters."
                     />
                   </td>
                 </tr>
               )
-              : sorted.map((player, rowIdx) => {
-                  const isHighBarrel = player.barrelPct >= 12;
-                  const isHighK      = player.kPct >= 28;
+              : paginated.map((player, rowIdx) => {
+                  const isHighBarrel = (player.barrelRate ?? 0) >= 12;
+                  const isHighK = (player.kPct ?? 0) >= 28;
+                  const isEliteEV = (player.exitVelocityAvg ?? 0) >= 92;
+                  const wobaVal = player.woba ?? 0;
                   return (
                     <tr
-                      key={player.id}
+                      key={player.id || `row-${rowIdx}`}
                       className={`border-b border-border/50 hover:bg-muted/30 transition-colors duration-100 ${rowIdx % 2 === 0 ? '' : 'bg-muted/10'}`}
                     >
                       <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
@@ -134,30 +148,47 @@ export default function AdvancedAnalyticsTable() {
                         <span className="font-mono-data text-xs text-muted-foreground">{player.team}</span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        <span className="font-mono-data text-xs text-muted-foreground">{player.pos}</span>
+                        <span className="font-mono-data text-xs text-muted-foreground">{player.position}</span>
                       </td>
                       <td className="px-3 py-2.5 text-right stat-cell text-muted-foreground">{player.pa}</td>
-                      <td className="px-3 py-2.5 text-right stat-cell">{player.avg}</td>
-                      <td className="px-3 py-2.5 text-right stat-cell">{player.obp}</td>
-                      <td className="px-3 py-2.5 text-right stat-cell">{player.slg}</td>
+                      <td className="px-3 py-2.5 text-right stat-cell">{fmtWoba(player.avg)}</td>
+                      <td className="px-3 py-2.5 text-right stat-cell">{fmtWoba(player.obp)}</td>
+                      <td className="px-3 py-2.5 text-right stat-cell">{fmtWoba(player.slg)}</td>
                       <td className="px-3 py-2.5 text-right">
-                        <span className={`stat-cell font-semibold ${parseFloat(player.woba) >= 0.360 ? 'text-positive' : parseFloat(player.woba) <= 0.310 ? 'text-negative' : 'text-foreground'}`}>
-                          {player.woba}
+                        <span className={`stat-cell font-semibold ${wobaVal >= 0.360 ? 'text-positive' : wobaVal <= 0.310 ? 'text-negative' : 'text-foreground'}`}>
+                          {fmtWoba(player.woba)}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right stat-cell">{player.iso}</td>
+                      <td className="px-3 py-2.5 text-right">
+                        <span className={`stat-cell ${player.xwoba !== null && player.woba !== null && player.xwoba > player.woba ? 'text-positive' : 'text-foreground'}`}>
+                          {fmtWoba(player.xwoba)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <span className={`stat-cell ${isEliteEV ? 'text-positive font-semibold' : 'text-foreground'}`}>
+                          {fmtStat(player.exitVelocityAvg, 1)}
+                        </span>
+                      </td>
                       <td className="px-3 py-2.5 text-right">
                         <span className={`stat-cell font-semibold ${isHighBarrel ? 'text-positive' : 'text-foreground'}`}>
-                          {player.barrelPct.toFixed(1)}%
+                          {fmtStat(player.barrelRate, 1, '')}
+                          {player.barrelRate !== null ? '%' : ''}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right stat-cell">{player.exitVelo.toFixed(1)}</td>
+                      <td className="px-3 py-2.5 text-right stat-cell">
+                        {fmtStat(player.hardHitPct, 1)}
+                        {player.hardHitPct !== null ? '%' : ''}
+                      </td>
                       <td className="px-3 py-2.5 text-right">
                         <span className={`stat-cell ${isHighK ? 'text-negative font-semibold' : 'text-foreground'}`}>
-                          {player.kPct.toFixed(1)}%
+                          {fmtStat(player.kPct, 1)}
+                          {player.kPct !== null ? '%' : ''}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right stat-cell text-muted-foreground">{player.bbPct.toFixed(1)}%</td>
+                      <td className="px-3 py-2.5 text-right stat-cell text-muted-foreground">
+                        {fmtStat(player.bbPct, 1)}
+                        {player.bbPct !== null ? '%' : ''}
+                      </td>
                     </tr>
                   );
                 })
@@ -166,27 +197,26 @@ export default function AdvancedAnalyticsTable() {
         </table>
       </div>
 
-      {/* Pagination stub */}
+      {/* Pagination */}
       <div className="px-4 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="font-mono-data">{mockPlayers.length} players</span>
+        <span className="font-mono-data">
+          {loading ? '…' : `${players.length} players`}
+        </span>
         <div className="flex items-center gap-1">
-          {[1, 2, 3].map((p) => (
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
             <button
               key={`page-${p}`}
-              className={`w-7 h-7 rounded font-mono-data text-xs transition-colors ${p === 1 ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+              onClick={() => setPage(p)}
+              className={`w-7 h-7 rounded font-mono-data text-xs transition-colors ${p === page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
               {p}
             </button>
           ))}
+          {totalPages > 5 && <span className="px-1">…</span>}
         </div>
-        <div className="flex items-center gap-2">
-          <span>Rows:</span>
-          <select className="bg-muted border border-border rounded px-1.5 py-0.5 text-xs text-foreground focus:outline-none">
-            <option>10</option>
-            <option>25</option>
-            <option>50</option>
-          </select>
-        </div>
+        <span className="font-mono-data">
+          {loading ? '' : `Page ${page} of ${totalPages}`}
+        </span>
       </div>
     </div>
   );
