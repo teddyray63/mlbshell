@@ -101,7 +101,15 @@ export default function PropCheatsheetPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => <TableRowSkeleton key={i} cols={3} />)
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
                   ) : plays.length === 0 ? (
                     <p className="px-3 py-4 text-xs text-muted-foreground text-center">No EV+ plays for this filter.</p>
                   ) : plays.map((p) => (
@@ -128,7 +136,15 @@ export default function PropCheatsheetPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => <TableRowSkeleton key={i} cols={3} />)
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
                   ) : neutral.length === 0 ? (
                     <p className="px-3 py-4 text-xs text-muted-foreground text-center">No neutral props.</p>
                   ) : neutral.map((p) => (
@@ -154,7 +170,15 @@ export default function PropCheatsheetPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => <TableRowSkeleton key={i} cols={3} />)
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
                   ) : fades.length === 0 ? (
                     <p className="px-3 py-4 text-xs text-muted-foreground text-center">No fade props.</p>
                   ) : fades.map((p) => (
