@@ -106,3 +106,38 @@ export interface SavedEdge {
   savedAt: string;
   notes?: string;
 }
+
+// ─── Hitter Projections ───────────────────────────────────────────────────────
+
+export type FieldState = 'confirmed' | 'projected' | 'missing' | 'unavailable' | 'skip';
+
+export interface DataQuality {
+  lineup: FieldState;
+  pitcher: FieldState;
+  weather: FieldState;
+  odds: FieldState;
+  statcast?: FieldState;
+  splits?: FieldState;
+}
+
+export interface HitterProjection {
+  id: string;
+  full_name: string;
+  team: string;
+  opponent?: string;
+  game_id?: string;
+  hits_proj: number;
+  hr_proj: number;
+  tb_proj: number;
+  rbi_proj?: number;
+  projected_score: number;
+  final_multiplier: number;
+  data_gap: boolean;
+  dq: DataQuality;
+}
+
+export interface SafeComputationResult {
+  value: number | null;
+  confidence: 'high' | 'medium' | 'low' | 'none';
+  reason?: string;
+}

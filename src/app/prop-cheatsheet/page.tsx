@@ -12,6 +12,8 @@ import PlayerSearch from '@/components/filters/PlayerSearch';
 import TeamFilter from '@/components/filters/TeamFilter';
 import GameFilter from '@/components/filters/GameFilter';
 import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
+import { MLBCheatsheetTable } from '@/components/mlb-cheatsheet-table';
+import type { HitterProjection } from '../../../shared/types';
 
 interface PropLine {
   id: string;
@@ -42,6 +44,7 @@ export default function PropCheatsheetPage() {
   const [selectedGame, setSelectedGame] = useState('');
   const [games, setGames] = useState<MLBGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+  const [hitterProjections, setHitterProjections] = useState<HitterProjection[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -51,6 +54,38 @@ export default function PropCheatsheetPage() {
       const res = await fetch(`/api/player-props?date=${date}`);
       const json = await res.json();
       setProps(json.props ?? []);
+
+      // Build hitter projections from props data
+      const hittersMap = new Map<string, HitterProjection>();
+      for (const p of (json.props ?? []) as PropLine[]) {
+        if (!hittersMap.has(p.id)) {
+          hittersMap.set(p.id, {
+            id: p.id,
+            full_name: p.player,
+            team: p.team,
+            opponent: p.opponent,
+            hits_proj: p.prop === 'Hits' ? (p.projection ?? 0) : 0,
+            hr_proj: p.prop === 'Home Runs' ? (p.projection ?? 0) : 0,
+            tb_proj: p.prop === 'Total Bases' ? (p.projection ?? 0) : 0,
+            projected_score: p.projection ?? 0,
+            final_multiplier: 1,
+            data_gap: false,
+            dq: {
+              lineup: 'projected',
+              pitcher: 'projected',
+              weather: 'projected',
+              odds: p.overOdds !== undefined ? 'confirmed' : 'missing',
+            },
+          });
+        } else {
+          const existing = hittersMap.get(p.id)!;
+          if (p.prop === 'Hits') existing.hits_proj = p.projection ?? existing.hits_proj;
+          if (p.prop === 'Home Runs') existing.hr_proj = p.projection ?? existing.hr_proj;
+          if (p.prop === 'Total Bases') existing.tb_proj = p.projection ?? existing.tb_proj;
+          existing.projected_score = Math.max(existing.projected_score, p.projection ?? 0);
+        }
+      }
+      setHitterProjections(Array.from(hittersMap.values()));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load props');
     } finally {
@@ -85,6 +120,18 @@ export default function PropCheatsheetPage() {
   const neutral = filtered.filter((p) => (p.edge ?? 0) >= -2 && (p.edge ?? 0) <= 3);
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const filteredHitters = useMemo(() => {
+    return hitterProjections.filter((h) => {
+      if (playerSearch && !h.full_name.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+      if (selectedTeam && h.team !== selectedTeam) return false;
+      if (selectedGame) {
+        const game = games.find((g) => g.id === selectedGame);
+        if (game && h.team !== game.homeTeam && h.team !== game.awayTeam) return false;
+      }
+      return true;
+    });
+  }, [hitterProjections, playerSearch, selectedTeam, selectedGame, games]);
 
   return (
     <AppLayout>
@@ -247,6 +294,23 @@ export default function PropCheatsheetPage() {
                 </div>
               </div>
             </div>
+
+            {/* Hitter Projections Table */}
+            {!loading && filteredHitters.length > 0 && (
+              <div className="card-surface overflow-hidden">
+                <div className="p-4 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    Hitter Projections — {filteredHitters.length} Players
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sorted by projected score · click column headers to re-sort
+                  </p>
+                </div>
+                <div className="p-4">
+                  <MLBCheatsheetTable data={filteredHitters} />
+                </div>
+              </div>
+            )}
 
             {/* Full table */}
             <div className="card-surface overflow-hidden">
