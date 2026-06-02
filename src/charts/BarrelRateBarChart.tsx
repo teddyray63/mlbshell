@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import {
   BarChart,
   Bar,
@@ -27,7 +27,7 @@ interface BarrelRateBarChartProps {
   height?: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
@@ -37,9 +37,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       </p>
     </div>
   );
-};
+});
 
-export default function BarrelRateBarChart({ data = mockData, height = 180 }: BarrelRateBarChartProps) {
+const BarrelRateBarChart = memo(function BarrelRateBarChart({ data = mockData, height = 180 }: BarrelRateBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -65,4 +65,6 @@ export default function BarrelRateBarChart({ data = mockData, height = 180 }: Ba
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
+
+export default BarrelRateBarChart;

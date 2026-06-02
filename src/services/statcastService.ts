@@ -63,8 +63,27 @@ function avg(values: (number | null)[]): number | null {
   return parseFloat((nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(3));
 }
 
+// ---------------------------------------------------------------------------
+// Client-side in-memory cache — deduplicates identical requests within a session
+// TTL: 5 minutes (matches server-side cache window)
+// ---------------------------------------------------------------------------
+const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface CacheEntry {
+  data: StatcastLeaderboardResult;
+  expiresAt: number;
+}
+
+const leaderboardCache = new Map<string, CacheEntry>();
+
+// In-flight request deduplication: if the same key is already fetching,
+// return the same promise instead of issuing a duplicate network request.
+const inFlight = new Map<string, Promise<StatcastLeaderboardResult>>();
+
 /**
  * Fetch the full Statcast hitter leaderboard from our internal API route.
+ * Results are cached client-side for 5 minutes to avoid duplicate fetches
+ * when filters haven't changed.
  */
 export async function fetchStatcastLeaderboard(
   options: StatcastFetchOptions = {}
@@ -73,23 +92,42 @@ export async function fetchStatcastLeaderboard(
   const min = options.min || '50';
   const type = options.type || 'batter';
 
+  const cacheKey = `${year}:${min}:${type}`;
+
+  // Return cached result if still fresh
+  const cached = leaderboardCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+
+  // Deduplicate concurrent requests for the same key
+  const existing = inFlight.get(cacheKey);
+  if (existing) return existing;
+
   const params = new URLSearchParams({ year, min, type });
-  const res = await fetch(`/api/statcast/leaderboard?${params.toString()}`, {
-    cache: 'no-store',
-  });
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body?.error || `Statcast API error: ${res.status}`);
-  }
+  const fetchPromise = fetch(`/api/statcast/leaderboard?${params.toString()}`)
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Statcast API error: ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data as StatcastLeaderboardResult;
+    })
+    .then((data) => {
+      leaderboardCache.set(cacheKey, { data, expiresAt: Date.now() + CLIENT_CACHE_TTL_MS });
+      inFlight.delete(cacheKey);
+      return data;
+    })
+    .catch((err) => {
+      inFlight.delete(cacheKey);
+      throw err;
+    });
 
-  const data = await res.json();
-
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  return data as StatcastLeaderboardResult;
+  inFlight.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**

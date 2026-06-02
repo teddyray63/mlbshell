@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -22,11 +22,23 @@ interface AdvancedAnalyticsChartsProps {
   loading: boolean;
 }
 
-export default function AdvancedAnalyticsCharts({
+const AdvancedAnalyticsCharts = memo(function AdvancedAnalyticsCharts({
   wobaTrend,
   battedBall,
   loading,
 }: AdvancedAnalyticsChartsProps) {
+  // Stabilize data references — only recompute when array contents change
+  const wobaData = useMemo(
+    () => (wobaTrend.length > 0 ? wobaTrend : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(wobaTrend)]
+  );
+  const battedBallData = useMemo(
+    () => (battedBall.length > 0 ? battedBall : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(battedBall)]
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
       {/* wOBA Trend */}
@@ -39,7 +51,7 @@ export default function AdvancedAnalyticsCharts({
         {loading ? (
           <ChartSkeleton height={180} />
         ) : (
-          <WobaAreaChart data={wobaTrend.length > 0 ? wobaTrend : undefined} height={180} />
+          <WobaAreaChart data={wobaData} height={180} />
         )}
       </div>
 
@@ -53,9 +65,11 @@ export default function AdvancedAnalyticsCharts({
         {loading ? (
           <ChartSkeleton height={180} />
         ) : (
-          <BarrelRateBarChart data={battedBall.length > 0 ? battedBall : undefined} height={180} />
+          <BarrelRateBarChart data={battedBallData} height={180} />
         )}
       </div>
     </div>
   );
-}
+});
+
+export default AdvancedAnalyticsCharts;

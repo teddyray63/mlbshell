@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import {
   RadarChart,
   Radar,
@@ -25,7 +25,7 @@ interface PitcherRadarChartProps {
   height?: number;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = memo(function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
@@ -33,9 +33,9 @@ const CustomTooltip = ({ active, payload }: any) => {
       <p className="font-mono-data text-primary font-semibold">{payload[0]?.value} ptile</p>
     </div>
   );
-};
+});
 
-export default function PitcherRadarChart({ data = mockData, height = 220 }: PitcherRadarChartProps) {
+const PitcherRadarChart = memo(function PitcherRadarChart({ data = mockData, height = 220 }: PitcherRadarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -55,4 +55,6 @@ export default function PitcherRadarChart({ data = mockData, height = 220 }: Pit
       </RadarChart>
     </ResponsiveContainer>
   );
-}
+});
+
+export default PitcherRadarChart;

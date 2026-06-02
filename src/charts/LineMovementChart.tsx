@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import {
   LineChart,
   Line,
@@ -28,7 +28,7 @@ interface LineMovementChartProps {
   height?: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
@@ -40,9 +40,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       ))}
     </div>
   );
-};
+});
 
-export default function LineMovementChart({ data = mockData, height = 200 }: LineMovementChartProps) {
+const LineMovementChart = memo(function LineMovementChart({ data = mockData, height = 200 }: LineMovementChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -82,4 +82,6 @@ export default function LineMovementChart({ data = mockData, height = 200 }: Lin
       </LineChart>
     </ResponsiveContainer>
   );
-}
+});
+
+export default LineMovementChart;

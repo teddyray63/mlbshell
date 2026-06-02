@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import MetricCard from '@/components/ui/MetricCard';
 import { Crosshair, Zap, BarChart2, TrendingDown, Activity, Target } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -21,7 +21,7 @@ function fmtWoba(val: number | null): string {
   return `.${Math.round(val * 1000).toString().padStart(3, '0')}`;
 }
 
-export default function AdvancedAnalyticsKPIs({ kpis, loading }: AdvancedAnalyticsKPIsProps) {
+const AdvancedAnalyticsKPIs = memo(function AdvancedAnalyticsKPIs({ kpis, loading }: AdvancedAnalyticsKPIsProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -105,4 +105,6 @@ export default function AdvancedAnalyticsKPIs({ kpis, loading }: AdvancedAnalyti
       />
     </div>
   );
-}
+});
+
+export default AdvancedAnalyticsKPIs;

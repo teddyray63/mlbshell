@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import Link from 'next/link';
 import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -8,7 +8,7 @@ import Topbar from '@/components/Topbar';
 import { mockPlayerProps } from '@/data/mockData';
 import { ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 
-function EdgeBadge({ edge }: { edge?: number }) {
+const EdgeBadge = memo(function EdgeBadge({ edge }: { edge?: number }) {
   if (edge === undefined) return null;
   const isPositive = edge > 0;
   return (
@@ -20,9 +20,9 @@ function EdgeBadge({ edge }: { edge?: number }) {
       {isPositive ? '+' : ''}{edge.toFixed(1)}%
     </span>
   );
-}
+});
 
-function HitRateBar({ rate }: { rate?: number }) {
+const HitRateBar = memo(function HitRateBar({ rate }: { rate?: number }) {
   if (rate === undefined) return null;
   const pct = Math.round(rate * 100);
   const color = pct >= 60 ? 'bg-positive' : pct >= 50 ? 'bg-warning' : 'bg-negative';
@@ -34,9 +34,11 @@ function HitRateBar({ rate }: { rate?: number }) {
       <span className="text-xs font-mono-data text-muted-foreground w-8 text-right">{pct}%</span>
     </div>
   );
-}
+});
 
 export default function PlayerPropsPage() {
+  const propCount = useMemo(() => mockPlayerProps.length, []);
+
   return (
     <AppLayout>
       <ErrorBoundary>
@@ -47,7 +49,7 @@ export default function PlayerPropsPage() {
               <p className="text-xs text-muted-foreground">
                 Click any player to view full profile, stats, and Statcast metrics.
               </p>
-              <span className="text-xs font-mono-data text-muted-foreground">{mockPlayerProps.length} props</span>
+              <span className="text-xs font-mono-data text-muted-foreground">{propCount} props</span>
             </div>
 
             {/* Desktop table */}

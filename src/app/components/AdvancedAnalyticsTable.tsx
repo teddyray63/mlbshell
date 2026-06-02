@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import SectionHeader from '@/components/ui/SectionHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -14,12 +14,12 @@ interface AdvancedAnalyticsTableProps {
 
 type SortKey = keyof StatcastPlayer;
 
-function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 'asc' | 'desc' }) {
+const SortIcon = memo(function SortIcon({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 'asc' | 'desc' }) {
   if (col !== sortKey) return <ArrowUpDown size={12} className="text-muted-foreground/40" />;
   return dir === 'asc'
     ? <ArrowUp size={12} className="text-primary" />
     : <ArrowDown size={12} className="text-primary" />;
-}
+});
 
 function fmtStat(val: number | null, decimals = 3, prefix = ''): string {
   if (val === null) return '—';
@@ -31,21 +31,41 @@ function fmtWoba(val: number | null): string {
   return `.${Math.round(val * 1000).toString().padStart(3, '0')}`;
 }
 
-export default function AdvancedAnalyticsTable({ players, loading }: AdvancedAnalyticsTableProps) {
+const cols: { key: SortKey; label: string; align?: string }[] = [
+  { key: 'name',            label: 'Player' },
+  { key: 'team',            label: 'Team',   align: 'center' },
+  { key: 'position',        label: 'Pos',    align: 'center' },
+  { key: 'pa',              label: 'PA',     align: 'right' },
+  { key: 'avg',             label: 'AVG',    align: 'right' },
+  { key: 'obp',             label: 'OBP',    align: 'right' },
+  { key: 'slg',             label: 'SLG',    align: 'right' },
+  { key: 'woba',            label: 'wOBA',   align: 'right' },
+  { key: 'xwoba',           label: 'xwOBA',  align: 'right' },
+  { key: 'exitVelocityAvg', label: 'EV',     align: 'right' },
+  { key: 'barrelRate',      label: 'Brl%',   align: 'right' },
+  { key: 'hardHitPct',      label: 'HH%',    align: 'right' },
+  { key: 'kPct',            label: 'K%',     align: 'right' },
+  { key: 'bbPct',           label: 'BB%',    align: 'right' },
+];
+
+const ROWS_PER_PAGE = 25;
+
+const AdvancedAnalyticsTable = memo(function AdvancedAnalyticsTable({ players, loading }: AdvancedAnalyticsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('woba');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
-  const rowsPerPage = 25;
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
       setSortDir('desc');
-    }
+      return key;
+    });
     setPage(1);
-  };
+  }, []);
 
   const sorted = useMemo(() => {
     return [...players].sort((a, b) => {
@@ -61,25 +81,11 @@ export default function AdvancedAnalyticsTable({ players, loading }: AdvancedAna
     });
   }, [players, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / rowsPerPage));
-  const paginated = sorted.slice((page - 1) * rowsPerPage, page * rowsPerPage);
-
-  const cols: { key: SortKey; label: string; align?: string }[] = [
-    { key: 'name',            label: 'Player' },
-    { key: 'team',            label: 'Team',   align: 'center' },
-    { key: 'position',        label: 'Pos',    align: 'center' },
-    { key: 'pa',              label: 'PA',     align: 'right' },
-    { key: 'avg',             label: 'AVG',    align: 'right' },
-    { key: 'obp',             label: 'OBP',    align: 'right' },
-    { key: 'slg',             label: 'SLG',    align: 'right' },
-    { key: 'woba',            label: 'wOBA',   align: 'right' },
-    { key: 'xwoba',           label: 'xwOBA',  align: 'right' },
-    { key: 'exitVelocityAvg', label: 'EV',     align: 'right' },
-    { key: 'barrelRate',      label: 'Brl%',   align: 'right' },
-    { key: 'hardHitPct',      label: 'HH%',    align: 'right' },
-    { key: 'kPct',            label: 'K%',     align: 'right' },
-    { key: 'bbPct',           label: 'BB%',    align: 'right' },
-  ];
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(sorted.length / ROWS_PER_PAGE)), [sorted.length]);
+  const paginated = useMemo(
+    () => sorted.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE),
+    [sorted, page]
+  );
 
   return (
     <div className="card-surface overflow-hidden">
@@ -220,4 +226,6 @@ export default function AdvancedAnalyticsTable({ players, loading }: AdvancedAna
       </div>
     </div>
   );
-}
+});
+
+export default AdvancedAnalyticsTable;
