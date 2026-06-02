@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0f1a;
+  --foreground: #e2e8f0;
+  --primary: #00d4ff;
+  --primary-foreground: #0a0f1a;
+  --secondary: #1a2235;
+  --secondary-foreground: #94a3b8;
+  --accent: #f59e0b;
+  --accent-foreground: #0a0f1a;
+  --muted: #1e2a3a;
+  --muted-foreground: #64748b;
+  --card: #111827;
+  --card-foreground: #e2e8f0;
+  --border: #1e2d40;
+  --input: #1a2235;
+  --ring: #00d4ff;
+  --radius: 8px;
+  --font-sans: var(--font-dm-sans), 'DM Sans', sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
+
+  --positive: #22c55e;
+  --positive-bg: rgba(34, 197, 94, 0.08);
+  --negative: #ef4444;
+  --negative-bg: rgba(239, 68, 68, 0.08);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --info: #00d4ff;
+  --info-bg: rgba(0, 212, 255, 0.08);
+  --sharp: #a855f7;
+  --sharp-bg: rgba(168, 85, 247, 0.08);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-positive { color: var(--positive); }
+  .text-negative { color: var(--negative); }
+  .text-warning { color: var(--warning); }
+  .text-sharp { color: var(--sharp); }
+
+  .bg-positive-subtle { background-color: var(--positive-bg); }
+  .bg-negative-subtle { background-color: var(--negative-bg); }
+  .bg-warning-subtle { background-color: var(--warning-bg); }
+  .bg-info-subtle { background-color: var(--info-bg); }
+  .bg-sharp-subtle { background-color: var(--sharp-bg); }
+
+  .border-positive { border-color: var(--positive); }
+  .border-negative { border-color: var(--negative); }
+  .border-warning { border-color: var(--warning); }
+  .border-sharp { border-color: var(--sharp); }
+  .border-primary { border-color: var(--primary); }
+
+  .glow-primary {
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 2px;
+  }
+
+  .sidebar-transition {
+    transition: width 300ms ease, transform 300ms ease;
+  }
+
+  .fade-in {
+    animation: fadeIn 200ms ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .pulse-highlight {
+    animation: pulseHighlight 600ms ease forwards;
+  }
+
+  @keyframes pulseHighlight {
+    0%   { background-color: rgba(0, 212, 255, 0.15); }
+    100% { background-color: transparent; }
+  }
+
+  .stat-cell {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+  }
+
+  .nav-item-active {
+    background-color: var(--info-bg);
+    color: var(--primary);
+    border-left: 2px solid var(--primary);
+  }
+
+  .nav-item-inactive {
+    color: var(--muted-foreground);
+    border-left: 2px solid transparent;
+  }
+
+  .card-surface {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .badge-sharp {
+    background-color: var(--sharp-bg);
+    color: var(--sharp);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+  }
+
+  .badge-square {
+    background-color: rgba(100, 116, 139, 0.1);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.2);
+  }
+
+  .badge-positive {
+    background-color: var(--positive-bg);
+    color: var(--positive);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .badge-negative {
+    background-color: var(--negative-bg);
+    color: var(--negative);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .badge-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .badge-info {
+    background-color: var(--info-bg);
+    color: var(--primary);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+  }
+}
