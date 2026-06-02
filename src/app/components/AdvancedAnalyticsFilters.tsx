@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import FilterChip from '@/components/ui/FilterChip';
 
@@ -9,6 +9,10 @@ interface AdvancedAnalyticsFiltersProps {
   onYearChange?: (year: string) => void;
   minPA?: string;
   onMinPAChange?: (min: string) => void;
+  handedness?: string;
+  onHandednessChange?: (h: string) => void;
+  search?: string;
+  onSearchChange?: (s: string) => void;
 }
 
 const YEARS = ['2026', '2025', '2024', '2023'];
@@ -24,10 +28,11 @@ export default function AdvancedAnalyticsFilters({
   onYearChange,
   minPA = '50',
   onMinPAChange,
+  handedness = 'all',
+  onHandednessChange,
+  search = '',
+  onSearchChange,
 }: AdvancedAnalyticsFiltersProps) {
-  const [handedness, setHandedness] = useState<string>('all');
-  const [search, setSearch] = useState('');
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
@@ -37,7 +42,7 @@ export default function AdvancedAnalyticsFilters({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e?.target?.value)}
+            onChange={(e) => onSearchChange?.(e?.target?.value ?? '')}
             placeholder="Search player or team…"
             className="w-full pl-8 pr-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
           />
@@ -78,7 +83,7 @@ export default function AdvancedAnalyticsFilters({
               key={`hand-${h}`}
               label={h === 'all' ? 'All' : h}
               active={handedness === h}
-              onClick={() => setHandedness(h)}
+              onClick={() => onHandednessChange?.(h)}
             />
           ))}
 

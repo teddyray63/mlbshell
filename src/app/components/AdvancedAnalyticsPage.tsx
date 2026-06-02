@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Topbar from '@/components/Topbar';
 import AdvancedAnalyticsFilters from './AdvancedAnalyticsFilters';
 import AdvancedAnalyticsKPIs from './AdvancedAnalyticsKPIs';
@@ -44,11 +44,13 @@ export default function AdvancedAnalyticsPage() {
   const [state, setState] = useState<AnalyticsState>(INITIAL_STATE);
   const [minPA, setMinPA] = useState('50');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [handedness, setHandedness] = useState('all');
+  const [search, setSearch] = useState('');
 
   const loadData = useCallback(async (year: string, min: string) => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const result = await fetchStatcastLeaderboard({ year, min, type: 'batter' });
+      let result = await fetchStatcastLeaderboard({ year, min, type: 'batter' });
       const kpis = deriveKPIs(result.players);
       const wobaTrend = buildWobaTrendFromLeaderboard(result.players);
       const battedBall = buildBattedBallProfile(result.players);
@@ -74,6 +76,25 @@ export default function AdvancedAnalyticsPage() {
 
   const handleRetry = () => loadData(selectedYear, minPA);
 
+  // Apply search + handedness filters client-side
+  const filteredPlayers = useMemo(() => {
+    let result = state.players;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q)
+      );
+    }
+    // Handedness filter: in production, this would filter by actual split data
+    // For now, it filters by position as a proxy (pitchers vs batters)
+    if (handedness === 'vs-LHP') {
+      result = result.filter((p) => p.position !== 'SP' && p.position !== 'RP');
+    } else if (handedness === 'vs-RHP') {
+      result = result.filter((p) => p.position !== 'SP' && p.position !== 'RP');
+    }
+    return result;
+  }, [state.players, search, handedness]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Topbar
@@ -83,6 +104,7 @@ export default function AdvancedAnalyticsPage() {
             ? `Live Statcast data — ${state.year} season · Updated ${new Date(state.fetchedAt).toLocaleTimeString()}`
             : 'Player & team statistical breakdowns — Statcast data'
         }
+        dataSource={state.loading ? 'mock' : 'live'}
       />
       <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-6">
         {/* Filters */}
@@ -91,6 +113,10 @@ export default function AdvancedAnalyticsPage() {
           onYearChange={setSelectedYear}
           minPA={minPA}
           onMinPAChange={setMinPA}
+          handedness={handedness}
+          onHandednessChange={setHandedness}
+          search={search}
+          onSearchChange={setSearch}
         />
 
         {/* Error Banner */}
@@ -120,8 +146,8 @@ export default function AdvancedAnalyticsPage() {
           loading={state.loading}
         />
 
-        {/* Stat Table */}
-        <AdvancedAnalyticsTable players={state.players} loading={state.loading} />
+        {/* Stat Table — uses filtered players */}
+        <AdvancedAnalyticsTable players={filteredPlayers} loading={state.loading} />
       </div>
     </div>
   );

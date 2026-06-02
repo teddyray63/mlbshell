@@ -109,6 +109,7 @@ const AdvancedAnalyticsTable = memo(function AdvancedAnalyticsTable({ players, l
                 <th
                   key={`th-${col.key}`}
                   onClick={() => handleSort(col.key)}
+                  aria-sort={col.key === sortKey ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none whitespace-nowrap hover:text-foreground transition-colors
                     ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                 >

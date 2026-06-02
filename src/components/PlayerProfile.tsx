@@ -98,7 +98,7 @@ export default function PlayerProfile({ player, recentGames, loading = false, ba
 
       {/* Season stats */}
       <div>
-        <SectionTitle icon={<ChartBarIcon className="w-4 h-4" />} title="2025 Season Stats" />
+        <SectionTitle icon={<ChartBarIcon className="w-4 h-4" />} title={`${new Date().getFullYear()} Season Stats`} />
         {pitcher ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricCard label="ERA" value={player.era?.toFixed(2) ?? '—'} />

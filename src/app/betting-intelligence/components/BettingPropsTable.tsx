@@ -1,26 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
-import TodoMarker from '@/components/ui/TodoMarker';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
-import { TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 
-// TODO: Replace with real prop line data from bettingService.fetchTodayPropLines()
-const mockProps = [
-  { id: 'prop-001', player: 'Rafael Ortega III', team: 'ATL', prop: 'Total Bases',  open: 1.5,  current: 2.5,  ev: 5.2,  sharp: true,  consensus: 72, status: 'steam'   },
-  { id: 'prop-002', player: 'Jaime Castillo',     team: 'MIN', prop: 'HR',           open: '+280', current: '+240', ev: 3.8,  sharp: true,  consensus: 58, status: 'value'   },
-  { id: 'prop-003', player: 'Manny Ramirez Jr.',  team: 'LAD', prop: 'Strikeouts',   open: 0.5,  current: 0.5,  ev: -1.4, sharp: false, consensus: 44, status: 'neutral' },
-  { id: 'prop-004', player: 'Elias Fontaine',     team: 'STL', prop: 'RBI',          open: 0.5,  current: 1.5,  ev: 4.1,  sharp: true,  consensus: 65, status: 'value'   },
-  { id: 'prop-005', player: 'Carlos Mendez',      team: 'HOU', prop: 'Hits',         open: 0.5,  current: 1.5,  ev: 2.9,  sharp: false, consensus: 51, status: 'neutral' },
-  { id: 'prop-006', player: 'Tomás Vidal',        team: 'SD',  prop: 'Total Bases',  open: 1.5,  current: 1.5,  ev: -2.7, sharp: false, consensus: 38, status: 'fade'    },
-  { id: 'prop-007', player: 'Marcus Webb',        team: 'BOS', prop: 'Strikeouts',   open: 0.5,  current: 0.5,  ev: -0.8, sharp: false, consensus: 47, status: 'neutral' },
-  { id: 'prop-008', player: 'Kevin Ashworth',     team: 'CHC', prop: 'HR',           open: '+320', current: '+290', ev: 1.9,  sharp: false, consensus: 52, status: 'neutral' },
-  { id: 'prop-009', player: 'Daisuke Nakamura',   team: 'SEA', prop: 'Hits',         open: 0.5,  current: 0.5,  ev: -3.2, sharp: false, consensus: 35, status: 'fade'    },
-  { id: 'prop-010', player: 'Derrick Holloway',   team: 'NYY', prop: 'Total Bases',  open: 1.5,  current: 2.5,  ev: 6.7,  sharp: true,  consensus: 78, status: 'steam'   },
-];
+interface PropLine {
+  id: string;
+  player: string;
+  team: string;
+  opponent: string;
+  prop: string;
+  line: number | string;
+  overOdds: number | string;
+  underOdds: number | string;
+  ev: number;
+  sharp: boolean;
+  consensus: number;
+  status: string;
+  projection?: number;
+  hitRate?: number;
+}
 
 type FilterStatus = 'all' | 'steam' | 'value' | 'fade' | 'neutral';
 
@@ -31,42 +33,89 @@ const statusBadge: Record<string, { variant: 'warning' | 'positive' | 'negative'
   neutral: { variant: 'neutral',  label: 'Neutral' },
 };
 
+const ROWS_PER_PAGE = 10;
+
 export default function BettingPropsTable() {
+  const [props, setProps] = useState<PropLine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [sortKey, setSortKey] = useState<'ev' | 'consensus'>('ev');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [loading] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const filtered = mockProps
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const res = await fetch(`/api/player-props?date=${date}`);
+      const json = await res.json();
+      // Map API response to PropLine shape
+      const mapped: PropLine[] = (json.props ?? []).map((p: Record<string, unknown>) => ({
+        id: String(p.id),
+        player: String(p.player),
+        team: String(p.team),
+        opponent: String(p.opponent ?? ''),
+        prop: String(p.prop),
+        line: p.line as number,
+        overOdds: p.overOdds as number,
+        underOdds: p.underOdds as number,
+        ev: Number(p.edge ?? 0),
+        sharp: Boolean(p.sharp),
+        consensus: Number(p.consensus ?? 50),
+        status: String(p.status ?? 'neutral'),
+        projection: p.projection as number | undefined,
+        hitRate: p.hitRate as number | undefined,
+      }));
+      setProps(mapped);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load props');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSort = (key: 'ev' | 'consensus') => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('desc'); }
+    setPage(1);
+  };
+
+  const filtered = props
     .filter((p) => filter === 'all' || p.status === filter)
     .sort((a, b) => {
       const diff = a[sortKey] - b[sortKey];
       return sortDir === 'asc' ? diff : -diff;
     });
 
-  const handleSort = (key: 'ev' | 'consensus') => {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('desc'); }
-  };
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const paginated = filtered.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
 
   return (
     <div className="card-surface overflow-hidden">
       <div className="p-4 border-b border-border space-y-3">
-        <SectionHeader
-          title="Today's Prop Lines"
-          subtitle="Opening vs. current line — EV% and sharp consensus"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <TodoMarker
-            pageName="BettingIntelligence PropsTable"
-            description="Replace mockProps with live prop feed from bettingService.fetchTodayPropLines()"
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            title="Today's Prop Lines"
+            subtitle="Opening vs. current line — EV% and sharp consensus"
           />
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {(['all', 'steam', 'value', 'fade', 'neutral'] as FilterStatus[]).map((f) => (
             <button
               key={`filter-${f}`}
-              onClick={() => setFilter(f)}
+              onClick={() => { setFilter(f); setPage(1); }}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-150 capitalize
                 ${filter === f
                   ? 'bg-info-subtle text-primary border-primary/40' :'bg-muted text-muted-foreground border-border hover:border-primary/30'
@@ -78,24 +127,31 @@ export default function BettingPropsTable() {
         </div>
       </div>
 
+      {error && (
+        <div className="px-4 py-3 bg-negative/10 border-b border-negative/30 text-xs text-negative flex items-center gap-2">
+          <span>Failed to load props: {error}</span>
+          <button onClick={loadData} className="underline">Retry</button>
+        </div>
+      )}
+
       <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
               {[
-                { key: 'player',    label: 'Player',      align: 'left',   sortable: false },
-                { key: 'team',      label: 'Team',        align: 'center', sortable: false },
-                { key: 'prop',      label: 'Prop',        align: 'left',   sortable: false },
-                { key: 'open',      label: 'Open',        align: 'center', sortable: false },
-                { key: 'current',   label: 'Current',     align: 'center', sortable: false },
-                { key: 'ev',        label: 'EV%',         align: 'right',  sortable: true  },
-                { key: 'sharp',     label: 'Sharp',       align: 'center', sortable: false },
-                { key: 'consensus', label: 'Consensus',   align: 'right',  sortable: true  },
-                { key: 'status',    label: 'Signal',      align: 'center', sortable: false },
+                { key: 'player',    label: 'Player',    align: 'left',   sortable: false },
+                { key: 'team',      label: 'Team',      align: 'center', sortable: false },
+                { key: 'prop',      label: 'Prop',      align: 'left',   sortable: false },
+                { key: 'line',      label: 'Line',      align: 'center', sortable: false },
+                { key: 'ev',        label: 'EV%',       align: 'right',  sortable: true  },
+                { key: 'sharp',     label: 'Sharp',     align: 'center', sortable: false },
+                { key: 'consensus', label: 'Consensus', align: 'right',  sortable: true  },
+                { key: 'status',    label: 'Signal',    align: 'center', sortable: false },
               ].map((col) => (
                 <th
                   key={`bth-${col.key}`}
                   onClick={col.sortable ? () => handleSort(col.key as 'ev' | 'consensus') : undefined}
+                  aria-sort={col.sortable && sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                   className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap
                     ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}
                     ${col.sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
@@ -115,12 +171,12 @@ export default function BettingPropsTable() {
           <tbody>
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <TableRowSkeleton key={`bskel-${i}`} cols={9} />
+                  <TableRowSkeleton key={`bskel-${i}`} cols={8} />
                 ))
-              : filtered.length === 0
+              : paginated.length === 0
               ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={8}>
                     <EmptyState
                       icon={<TrendingUp size={32} />}
                       title="No prop lines match this filter"
@@ -129,10 +185,9 @@ export default function BettingPropsTable() {
                   </td>
                 </tr>
               )
-              : filtered.map((prop, rowIdx) => {
+              : paginated.map((prop, rowIdx) => {
                   const evPositive = prop.ev >= 3;
                   const evNegative = prop.ev <= -2;
-                  const moved = String(prop.open) !== String(prop.current);
                   return (
                     <tr
                       key={prop.id}
@@ -141,13 +196,7 @@ export default function BettingPropsTable() {
                       <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">{prop.player}</td>
                       <td className="px-3 py-2.5 text-center font-mono-data text-xs text-muted-foreground">{prop.team}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{prop.prop}</td>
-                      <td className="px-3 py-2.5 text-center font-mono-data text-xs text-muted-foreground">{prop.open}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className={`font-mono-data text-xs font-semibold ${moved ? 'text-warning' : 'text-muted-foreground'}`}>
-                          {prop.current}
-                          {moved && <span className="ml-1 text-warning">↑</span>}
-                        </span>
-                      </td>
+                      <td className="px-3 py-2.5 text-center font-mono-data text-xs font-semibold">{prop.line}</td>
                       <td className="px-3 py-2.5 text-right">
                         <span className={`font-mono-data text-xs font-bold ${evPositive ? 'text-positive' : evNegative ? 'text-negative' : 'text-muted-foreground'}`}>
                           {prop.ev >= 0 ? '+' : ''}{prop.ev.toFixed(1)}%
@@ -171,8 +220,8 @@ export default function BettingPropsTable() {
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        <StatusBadge variant={statusBadge[prop.status].variant}>
-                          {statusBadge[prop.status].label}
+                        <StatusBadge variant={statusBadge[prop.status]?.variant ?? 'neutral'}>
+                          {statusBadge[prop.status]?.label ?? prop.status}
                         </StatusBadge>
                       </td>
                     </tr>
@@ -183,19 +232,22 @@ export default function BettingPropsTable() {
         </table>
       </div>
 
+      {/* Real pagination */}
       <div className="px-4 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="font-mono-data">{filtered.length} of {mockProps.length} props</span>
+        <span className="font-mono-data">{filtered.length} of {props.length} props</span>
         <div className="flex items-center gap-1">
-          {[1, 2].map((p) => (
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
             <button
               key={`bpage-${p}`}
-              className={`w-7 h-7 rounded font-mono-data text-xs transition-colors ${p === 1 ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+              onClick={() => setPage(p)}
+              className={`w-7 h-7 rounded font-mono-data text-xs transition-colors ${p === page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
             >
               {p}
             </button>
           ))}
+          {totalPages > 5 && <span className="px-1">…</span>}
         </div>
-        <span>Updated: 4:32 PM ET</span>
+        <span className="font-mono-data">Page {page} of {totalPages}</span>
       </div>
     </div>
   );

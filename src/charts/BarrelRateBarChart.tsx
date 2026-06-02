@@ -12,22 +12,21 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// TODO: Replace with real batted ball profile data
-const mockData = [
-  { name: 'Groundball',   pct: 0.38 },
-  { name: 'Line Drive',   pct: 0.24 },
-  { name: 'Fly Ball',     pct: 0.29 },
-  { name: 'Pop Up',       pct: 0.09 },
-];
-
 const COLORS = ['var(--muted-foreground)', 'var(--primary)', 'var(--accent)', 'var(--negative)'];
 
 interface BarrelRateBarChartProps {
-  data?: typeof mockData;
+  data?: { name: string; pct: number }[];
   height?: number;
 }
 
-const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
+const defaultData = [
+  { name: 'Groundball', pct: 0.38 },
+  { name: 'Line Drive', pct: 0.24 },
+  { name: 'Fly Ball',   pct: 0.29 },
+  { name: 'Pop Up',     pct: 0.09 },
+];
+
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; fill: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
@@ -39,31 +38,33 @@ const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: an
   );
 });
 
-const BarrelRateBarChart = memo(function BarrelRateBarChart({ data = mockData, height = 180 }: BarrelRateBarChartProps) {
+const BarrelRateBarChart = memo(function BarrelRateBarChart({ data = defaultData, height = 180 }: BarrelRateBarChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-          tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="pct" radius={[3, 3, 0, 0]}>
-          {data.map((_, i) => (
-            <Cell key={`barrel-cell-${i}`} fill={COLORS[i % COLORS.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div role="img" aria-label="Batted ball profile bar chart showing distribution of groundballs, line drives, fly balls, and pop ups">
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+            tick={{ fontSize: 10, fill: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="pct" radius={[3, 3, 0, 0]}>
+            {data.map((_, i) => (
+              <Cell key={`barrel-cell-${i}`} fill={COLORS[i % COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 });
 
