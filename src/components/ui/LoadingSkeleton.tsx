@@ -38,9 +38,9 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
   );
 }
 
-export function CardSkeleton() {
+export function CardSkeleton({ className = '' }: SkeletonProps) {
   return (
-    <div className="card-surface p-4 flex flex-col gap-2">
+    <div className={`card-surface p-4 flex flex-col gap-2 ${className}`}>
       <Skeleton className="h-3 w-20" />
       <Skeleton className="h-8 w-28" />
       <Skeleton className="h-3 w-16" />

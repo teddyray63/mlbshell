@@ -7,7 +7,7 @@ import Topbar from '@/components/Topbar';
 import MetricCard from '@/components/ui/MetricCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
-import { Search, TrendingUp, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
+import { Search, TrendingUp, AlertTriangle, RefreshCw, Filter, Bookmark, BookmarkCheck } from 'lucide-react';
 import Link from 'next/link';
 
 interface PropLine {
@@ -36,6 +36,8 @@ export default function PropAnalyzerPage() {
   const [search, setSearch] = useState('');
   const [propType, setPropType] = useState('All');
   const [minEdge, setMinEdge] = useState(0);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -53,6 +55,33 @@ export default function PropAnalyzerPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSaveEdge = useCallback(async (prop: PropLine) => {
+    if (savedIds.has(prop.id) || savingId) return;
+    setSavingId(prop.id);
+    try {
+      const res = await fetch('/api/saved-edges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          player: prop.player,
+          prop: prop.prop,
+          line: prop.line,
+          direction: 'over',
+          edge: prop.edge ?? 0,
+          confidence: (prop.edge ?? 0) >= 6 ? 'high' : (prop.edge ?? 0) >= 3 ? 'medium' : 'low',
+          notes: `${prop.team} vs ${prop.opponent} — Proj: ${prop.projection?.toFixed(1) ?? '—'}, Hit Rate: ${Math.round((prop.hitRate ?? 0) * 100)}%`,
+        }),
+      });
+      if (res.ok) {
+        setSavedIds((prev) => new Set([...prev, prop.id]));
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setSavingId(null);
+    }
+  }, [savedIds, savingId]);
 
   const filtered = useMemo(() => {
     return props.filter((p) => {
@@ -130,9 +159,20 @@ export default function PropAnalyzerPage() {
                   <p className="font-semibold text-foreground">{topEdge.player} — {topEdge.prop} {topEdge.line}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{topEdge.team} vs {topEdge.opponent}</p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-2xl font-bold font-mono-data text-positive">+{(topEdge.edge ?? 0).toFixed(1)}%</p>
-                  <p className="text-xs text-muted-foreground">edge</p>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right">
+                    <p className="text-2xl font-bold font-mono-data text-positive">+{(topEdge.edge ?? 0).toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">edge</p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveEdge(topEdge)}
+                    disabled={savedIds.has(topEdge.id) || savingId === topEdge.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-positive/10 hover:bg-positive/20 text-positive text-xs font-semibold transition-colors disabled:opacity-60"
+                    title="Save to Saved Edges"
+                  >
+                    {savedIds.has(topEdge.id) ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+                    {savedIds.has(topEdge.id) ? 'Saved' : 'Save Edge'}
+                  </button>
                 </div>
               </div>
             )}
@@ -157,14 +197,22 @@ export default function PropAnalyzerPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
-                      {['Player', 'Team', 'Opp', 'Prop', 'Line', 'Proj', 'Edge', 'Hit Rate', 'Signal'].map((h) => (
+                      {['Player', 'Team', 'Opp', 'Prop', 'Line', 'Proj', 'Edge', 'Hit Rate', 'Signal', ''].map((h) => (
                         <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-left whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {loading
-                      ? Array.from({ length: 8 }).map((_, i) => <TableRowSkeleton key={i} cols={9} />)
+                      ? Array.from({ length: 8 }).map((_, i) => <TableRowSkeleton key={i} cols={10} />)
+                      : filtered.length === 0
+                      ? (
+                        <tr>
+                          <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                            No props match the current filters.
+                          </td>
+                        </tr>
+                      )
                       : filtered.map((prop, i) => (
                         <tr key={prop.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
                           <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
@@ -194,6 +242,17 @@ export default function PropAnalyzerPage() {
                             <StatusBadge variant={prop.status === 'steam' ? 'warning' : prop.status === 'value' ? 'positive' : prop.status === 'fade' ? 'negative' : 'neutral'}>
                               {prop.status}
                             </StatusBadge>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <button
+                              onClick={() => handleSaveEdge(prop)}
+                              disabled={savedIds.has(prop.id) || savingId === prop.id}
+                              className={`p-1 rounded transition-colors ${savedIds.has(prop.id) ? 'text-positive' : 'text-muted-foreground hover:text-primary'} disabled:opacity-50`}
+                              title={savedIds.has(prop.id) ? 'Saved' : 'Save edge'}
+                              aria-label={savedIds.has(prop.id) ? 'Edge saved' : 'Save edge'}
+                            >
+                              {savedIds.has(prop.id) ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+                            </button>
                           </td>
                         </tr>
                       ))
