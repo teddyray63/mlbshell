@@ -9,6 +9,10 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Search, TrendingUp, AlertTriangle, RefreshCw, Filter, Bookmark, BookmarkCheck } from 'lucide-react';
 import Link from 'next/link';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
+import GameFilter from '@/components/filters/GameFilter';
+import { MOCK_GAMES } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -36,6 +40,8 @@ export default function PropAnalyzerPage() {
   const [search, setSearch] = useState('');
   const [propType, setPropType] = useState('All');
   const [minEdge, setMinEdge] = useState(0);
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedGame, setSelectedGame] = useState('');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -88,9 +94,14 @@ export default function PropAnalyzerPage() {
       const matchSearch = !search || p.player.toLowerCase().includes(search.toLowerCase()) || p.team.toLowerCase().includes(search.toLowerCase());
       const matchType = propType === 'All' || p.prop === propType;
       const matchEdge = (p.edge ?? 0) >= minEdge;
-      return matchSearch && matchType && matchEdge;
+      const matchTeam = !selectedTeam || p.team === selectedTeam;
+      const matchGame = !selectedGame || (() => {
+        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        return !game || p.team === game.homeTeam || p.team === game.awayTeam;
+      })();
+      return matchSearch && matchType && matchEdge && matchTeam && matchGame;
     }).sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
-  }, [props, search, propType, minEdge]);
+  }, [props, search, propType, minEdge, selectedTeam, selectedGame]);
 
   const topEdge = filtered[0];
   const evPlusCount = filtered.filter((p) => (p.edge ?? 0) > 3).length;
@@ -113,17 +124,15 @@ export default function PropAnalyzerPage() {
 
             {/* Filters */}
             <div className="card-surface p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                <div className="relative w-full sm:w-64">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search player or team…"
-                    className="w-full pl-8 pr-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </div>
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between flex-wrap">
+                <PlayerSearch
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search player or team…"
+                  className="w-full sm:w-56"
+                />
+                <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel />
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter size={13} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Min Edge:</span>
@@ -249,9 +258,8 @@ export default function PropAnalyzerPage() {
                               disabled={savedIds.has(prop.id) || savingId === prop.id}
                               className={`p-1 rounded transition-colors ${savedIds.has(prop.id) ? 'text-positive' : 'text-muted-foreground hover:text-primary'} disabled:opacity-50`}
                               title={savedIds.has(prop.id) ? 'Saved' : 'Save edge'}
-                              aria-label={savedIds.has(prop.id) ? 'Edge saved' : 'Save edge'}
                             >
-                              {savedIds.has(prop.id) ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+                              {savedIds.has(prop.id) ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
                             </button>
                           </td>
                         </tr>

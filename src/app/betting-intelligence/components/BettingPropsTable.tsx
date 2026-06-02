@@ -35,7 +35,13 @@ const statusBadge: Record<string, { variant: 'warning' | 'positive' | 'negative'
 
 const ROWS_PER_PAGE = 10;
 
-export default function BettingPropsTable() {
+interface BettingPropsTableProps {
+  playerFilter?: string;
+  teamFilter?: string;
+  gameFilter?: string;
+}
+
+export default function BettingPropsTable({ playerFilter = '', teamFilter = '', gameFilter = '' }: BettingPropsTableProps) {
   const [props, setProps] = useState<PropLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +91,12 @@ export default function BettingPropsTable() {
   };
 
   const filtered = props
-    .filter((p) => filter === 'all' || p.status === filter)
+    .filter((p) => {
+      if (filter !== 'all' && p.status !== filter) return false;
+      if (playerFilter && !p.player.toLowerCase().includes(playerFilter.toLowerCase())) return false;
+      if (teamFilter && p.team !== teamFilter) return false;
+      return true;
+    })
     .sort((a, b) => {
       const diff = a[sortKey] - b[sortKey];
       return sortDir === 'asc' ? diff : -diff;

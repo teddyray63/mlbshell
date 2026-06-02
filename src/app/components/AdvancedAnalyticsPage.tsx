@@ -6,6 +6,8 @@ import AdvancedAnalyticsFilters from './AdvancedAnalyticsFilters';
 import AdvancedAnalyticsKPIs from './AdvancedAnalyticsKPIs';
 import AdvancedAnalyticsCharts from './AdvancedAnalyticsCharts';
 import AdvancedAnalyticsTable from './AdvancedAnalyticsTable';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
 import {
   fetchStatcastLeaderboard,
   deriveKPIs,
@@ -46,6 +48,7 @@ export default function AdvancedAnalyticsPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [handedness, setHandedness] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
 
   const loadData = useCallback(async (year: string, min: string) => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
@@ -76,7 +79,6 @@ export default function AdvancedAnalyticsPage() {
 
   const handleRetry = () => loadData(selectedYear, minPA);
 
-  // Apply search + handedness filters client-side
   const filteredPlayers = useMemo(() => {
     let result = state.players;
     if (search.trim()) {
@@ -85,15 +87,16 @@ export default function AdvancedAnalyticsPage() {
         (p) => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q)
       );
     }
-    // Handedness filter: in production, this would filter by actual split data
-    // For now, it filters by position as a proxy (pitchers vs batters)
+    if (selectedTeam) {
+      result = result.filter((p) => p.team === selectedTeam);
+    }
     if (handedness === 'vs-LHP') {
       result = result.filter((p) => p.position !== 'SP' && p.position !== 'RP');
     } else if (handedness === 'vs-RHP') {
       result = result.filter((p) => p.position !== 'SP' && p.position !== 'RP');
     }
     return result;
-  }, [state.players, search, handedness]);
+  }, [state.players, search, handedness, selectedTeam]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -118,6 +121,31 @@ export default function AdvancedAnalyticsPage() {
           search={search}
           onSearchChange={setSearch}
         />
+
+        {/* Team filter + player search row */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <PlayerSearch
+            value={search}
+            onChange={setSearch}
+            placeholder="Search player…"
+            className="w-48"
+            showDropdown={false}
+          />
+          <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+          {(selectedTeam || search) && (
+            <button
+              onClick={() => { setSelectedTeam(''); setSearch(''); }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/50"
+            >
+              Clear
+            </button>
+          )}
+          {filteredPlayers.length !== state.players.length && (
+            <span className="text-xs text-muted-foreground font-mono-data">
+              {filteredPlayers.length} of {state.players.length} players
+            </span>
+          )}
+        </div>
 
         {/* Error Banner */}
         {state.error && (

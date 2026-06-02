@@ -7,6 +7,11 @@ import Topbar from '@/components/Topbar';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import { AlertTriangle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import Link from 'next/link';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
+import GameFilter from '@/components/filters/GameFilter';
+import { MOCK_GAMES } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -32,6 +37,9 @@ export default function PropCheatsheetPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [propType, setPropType] = useState('All');
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedGame, setSelectedGame] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -51,9 +59,18 @@ export default function PropCheatsheetPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const filtered = useMemo(() => {
-    const base = propType === 'All' ? props : props.filter((p) => p.prop === propType);
+    const base = props.filter((p) => {
+      if (propType !== 'All' && p.prop !== propType) return false;
+      if (playerSearch && !p.player.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+      if (selectedTeam && p.team !== selectedTeam) return false;
+      if (selectedGame) {
+        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
+      }
+      return true;
+    });
     return [...base].sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
-  }, [props, propType]);
+  }, [props, propType, playerSearch, selectedTeam, selectedGame]);
 
   const plays = filtered.filter((p) => (p.edge ?? 0) > 3);
   const fades = filtered.filter((p) => (p.edge ?? 0) < -2);
@@ -67,17 +84,38 @@ export default function PropCheatsheetPage() {
         <div className="flex flex-col min-h-screen">
           <Topbar title="Prop Cheatsheet" subtitle={`Quick-reference prop summary — ${today}`} dataSource={loading ? 'mock' : 'live'} />
           <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-6">
-            {/* Prop type filter */}
-            <div className="flex flex-wrap gap-2">
-              {PROP_TYPES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setPropType(t)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${propType === t ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-                >
-                  {t}
-                </button>
-              ))}
+            {/* Filters */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 items-center">
+                <PlayerSearch
+                  value={playerSearch}
+                  onChange={setPlayerSearch}
+                  placeholder="Search player…"
+                  className="w-48"
+                />
+                <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel />
+                {(playerSearch || selectedTeam || selectedGame) && (
+                  <button
+                    onClick={() => { setPlayerSearch(''); setSelectedTeam(''); setSelectedGame(''); }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/50"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {/* Prop type filter */}
+              <div className="flex flex-wrap gap-2">
+                {PROP_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPropType(t)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${propType === t ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {error && (
@@ -115,7 +153,9 @@ export default function PropCheatsheetPage() {
                   ) : plays.map((p) => (
                     <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">{p.player}</p>
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
                         <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -150,7 +190,9 @@ export default function PropCheatsheetPage() {
                   ) : neutral.map((p) => (
                     <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">{p.player}</p>
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
                         <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
                       </div>
                       <span className="font-mono-data text-xs text-muted-foreground flex-shrink-0 ml-2">
@@ -184,7 +226,9 @@ export default function PropCheatsheetPage() {
                   ) : fades.map((p) => (
                     <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">{p.player}</p>
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
                         <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
                       </div>
                       <span className="font-mono-data text-xs font-bold text-negative flex-shrink-0 ml-2">
@@ -215,7 +259,11 @@ export default function PropCheatsheetPage() {
                       ? Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} cols={9} />)
                       : filtered.map((p, i) => (
                         <tr key={p.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                          <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">{p.player}</td>
+                          <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
+                            <Link href={`/player-props/${p.id}`} className="hover:text-primary transition-colors">
+                              {p.player}
+                            </Link>
+                          </td>
                           <td className="px-3 py-2.5 font-mono-data text-xs text-muted-foreground">{p.team}</td>
                           <td className="px-3 py-2.5 text-xs text-foreground">{p.prop}</td>
                           <td className="px-3 py-2.5 font-mono-data text-xs font-semibold">{p.line}</td>

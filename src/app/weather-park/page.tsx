@@ -6,18 +6,19 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
 import { Wind, Thermometer, Droplets, Eye, MapPin, AlertTriangle, RefreshCw } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
+import { MOCK_GAMES } from '@/data/mlbGames';
 
 const VENUES = [
-  { id: 'yankee-stadium',   label: 'Yankee Stadium' },
-  { id: 'dodger-stadium',   label: 'Dodger Stadium' },
-  { id: 'fenway-park',      label: 'Fenway Park' },
-  { id: 'wrigley-field',    label: 'Wrigley Field' },
-  { id: 'truist-park',      label: 'Truist Park' },
-  { id: 'minute-maid-park', label: 'Minute Maid Park' },
-  { id: 'oracle-park',      label: 'Oracle Park' },
-  { id: 'petco-park',       label: 'Petco Park' },
-  { id: 'coors-field',      label: 'Coors Field' },
-  { id: 'camden-yards',     label: 'Camden Yards' },
+  { id: 'yankee-stadium',   label: 'Yankee Stadium',  team: 'NYY' },
+  { id: 'dodger-stadium',   label: 'Dodger Stadium',  team: 'LAD' },
+  { id: 'fenway-park',      label: 'Fenway Park',     team: 'BOS' },
+  { id: 'wrigley-field',    label: 'Wrigley Field',   team: 'CHC' },
+  { id: 'truist-park',      label: 'Truist Park',     team: 'ATL' },
+  { id: 'minute-maid-park', label: 'Minute Maid Park', team: 'HOU' },
+  { id: 'oracle-park',      label: 'Oracle Park',     team: 'SF' },
+  { id: 'petco-park',       label: 'Petco Park',      team: 'SD' },
+  { id: 'coors-field',      label: 'Coors Field',     team: 'COL' },
+  { id: 'camden-yards',     label: 'Camden Yards',    team: 'BAL' },
 ];
 
 interface WeatherData {
@@ -50,6 +51,7 @@ export default function WeatherParkPage() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGame, setSelectedGame] = useState('');
 
   const loadWeather = useCallback(async (venue: string) => {
     setLoading(true);
@@ -68,6 +70,16 @@ export default function WeatherParkPage() {
 
   useEffect(() => { loadWeather(selectedVenue); }, [loadWeather, selectedVenue]);
 
+  // When a game is selected, auto-select the home team's venue
+  const handleGameSelect = (gameId: string) => {
+    setSelectedGame(gameId);
+    if (!gameId) return;
+    const game = MOCK_GAMES.find((g) => g.id === gameId);
+    if (!game) return;
+    const venue = VENUES.find((v) => v.team === game.homeTeam);
+    if (venue) setSelectedVenue(venue.id);
+  };
+
   const pf = weather?.parkFactors;
 
   return (
@@ -76,12 +88,31 @@ export default function WeatherParkPage() {
         <div className="flex flex-col min-h-screen">
           <Topbar title="Weather & Park" subtitle="Real-time weather conditions and park factor overlays" dataSource={loading ? 'mock' : 'live'} />
           <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-6">
+            {/* Game filter */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Game:</span>
+                <select
+                  value={selectedGame}
+                  onChange={(e) => handleGameSelect(e.target.value)}
+                  className="px-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Select Game</option>
+                  {MOCK_GAMES.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.awayTeam} @ {g.homeTeam}{g.status === 'live' ? ' 🔴' : g.status === 'final' ? ' ✓' : ` · ${g.time}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Venue selector */}
             <div className="flex flex-wrap gap-2">
               {VENUES.map((v) => (
                 <button
                   key={v.id}
-                  onClick={() => setSelectedVenue(v.id)}
+                  onClick={() => { setSelectedVenue(v.id); setSelectedGame(''); }}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
                     selectedVenue === v.id
                       ? 'bg-primary text-primary-foreground border-primary'

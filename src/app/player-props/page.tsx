@@ -7,6 +7,10 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
 import { ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
+import GameFilter from '@/components/filters/GameFilter';
+import { MOCK_GAMES } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -22,6 +26,8 @@ interface PropLine {
   hitRate?: number;
   status: string;
 }
+
+const PROP_TYPES = ['All', 'Strikeouts', 'Hits', 'Home Runs', 'Total Bases', 'RBIs', 'Innings Pitched'];
 
 const EdgeBadge = memo(function EdgeBadge({ edge }: { edge?: number }) {
   if (edge === undefined) return null;
@@ -51,6 +57,10 @@ export default function PlayerPropsPage() {
   const [props, setProps] = useState<PropLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedGame, setSelectedGame] = useState('');
+  const [propType, setPropType] = useState('All');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -69,7 +79,20 @@ export default function PlayerPropsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const propCount = useMemo(() => props.length, [props]);
+  const filteredProps = useMemo(() => {
+    return props.filter((p) => {
+      if (playerSearch && !p.player.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+      if (selectedTeam && p.team !== selectedTeam) return false;
+      if (propType !== 'All' && p.prop !== propType) return false;
+      if (selectedGame) {
+        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
+      }
+      return true;
+    });
+  }, [props, playerSearch, selectedTeam, propType, selectedGame]);
+
+  const hasFilters = playerSearch || selectedTeam || selectedGame || propType !== 'All';
 
   return (
     <AppLayout>
@@ -77,16 +100,44 @@ export default function PlayerPropsPage() {
         <div className="flex flex-col min-h-screen">
           <Topbar title="Player Props" subtitle="Individual player prop lines and analysis" dataSource={loading ? 'mock' : 'live'} />
           <div className="flex-1 px-4 md:px-6 py-5 max-w-screen-2xl mx-auto w-full">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Click any player to view full profile, stats, and Statcast metrics.
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono-data text-muted-foreground">{propCount} props</span>
-                <button onClick={loadData} disabled={loading} className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1">
-                  <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
-                  Refresh
-                </button>
+            {/* Filters */}
+            <div className="mb-4 space-y-3">
+              <div className="flex flex-wrap gap-3 items-center">
+                <PlayerSearch
+                  value={playerSearch}
+                  onChange={setPlayerSearch}
+                  placeholder="Search player…"
+                  className="w-48"
+                />
+                <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel loading={loading} />
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs font-mono-data text-muted-foreground">{filteredProps.length} props</span>
+                  <button onClick={loadData} disabled={loading} className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1">
+                    <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+              {/* Prop type filter */}
+              <div className="flex flex-wrap gap-1.5">
+                {PROP_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPropType(t)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${propType === t ? 'bg-info-subtle text-primary border-primary/40' : 'bg-muted text-muted-foreground border-border hover:border-primary/30'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+                {hasFilters && (
+                  <button
+                    onClick={() => { setPlayerSearch(''); setSelectedTeam(''); setSelectedGame(''); setPropType('All'); }}
+                    className="px-3 py-1 rounded-full text-xs font-semibold border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
               </div>
             </div>
 
@@ -119,7 +170,13 @@ export default function PlayerPropsPage() {
                         ))}
                       </tr>
                     ))
-                  ) : props.map((prop) => (
+                  ) : filteredProps.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                        No props match the current filters.
+                      </td>
+                    </tr>
+                  ) : filteredProps.map((prop) => (
                     <tr key={prop.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors group">
                       <td className="px-4 py-3">
                         <Link href={`/player-props/${prop.id}`} className="flex items-center gap-2 font-semibold text-foreground hover:text-primary transition-colors">
@@ -170,7 +227,11 @@ export default function PlayerPropsPage() {
                     </div>
                   </div>
                 ))
-              ) : props.map((prop) => (
+              ) : filteredProps.length === 0 ? (
+                <div className="card-surface p-8 text-center text-muted-foreground text-sm">
+                  No props match the current filters.
+                </div>
+              ) : filteredProps.map((prop) => (
                 <Link key={prop.id} href={`/player-props/${prop.id}`} className="card-surface p-4 flex items-start gap-3 hover:bg-muted/30 transition-colors block">
                   <span className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                     <UserIcon className="w-4 h-4 text-muted-foreground" />

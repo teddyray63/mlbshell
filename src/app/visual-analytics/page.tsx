@@ -7,6 +7,9 @@ import Topbar from '@/components/Topbar';
 import dynamic from 'next/dynamic';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
 import {
   fetchStatcastLeaderboard,
   buildWobaTrendFromLeaderboard,
@@ -29,6 +32,8 @@ export default function VisualAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
 
   const loadData = useCallback(async (y: string) => {
     setLoading(true);
@@ -47,8 +52,15 @@ export default function VisualAnalyticsPage() {
 
   useEffect(() => { loadData(year); }, [loadData, year]);
 
+  // Apply player/team filters
+  const filteredPlayers = players.filter((p) => {
+    if (playerSearch && !p.name.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+    if (selectedTeam && p.team !== selectedTeam) return false;
+    return true;
+  });
+
   // Top 10 by barrel rate for radar
-  const topBarrel = players.slice(0, 10);
+  const topBarrel = filteredPlayers.slice(0, 10);
   const avgBarrel = topBarrel.length > 0
     ? topBarrel.reduce((s, p) => s + (p.barrelRate ?? 0), 0) / topBarrel.length
     : 8;
@@ -83,17 +95,41 @@ export default function VisualAnalyticsPage() {
         <div className="flex flex-col min-h-screen">
           <Topbar title="Visual Analytics" subtitle="Charts, spray charts, and visual breakdowns" dataSource={loading ? 'mock' : 'live'} />
           <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-6">
-            {/* Year filter */}
-            <div className="flex gap-2">
-              {YEARS.map((y) => (
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 items-center">
+              {/* Year filter */}
+              <div className="flex gap-2">
+                {YEARS.map((y) => (
+                  <button
+                    key={y}
+                    onClick={() => setYear(y)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${year === y ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+              <PlayerSearch
+                value={playerSearch}
+                onChange={setPlayerSearch}
+                placeholder="Filter player…"
+                className="w-44"
+                showDropdown={false}
+              />
+              <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+              {(playerSearch || selectedTeam) && (
                 <button
-                  key={y}
-                  onClick={() => setYear(y)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${year === y ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                  onClick={() => { setPlayerSearch(''); setSelectedTeam(''); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/50"
                 >
-                  {y}
+                  Clear
                 </button>
-              ))}
+              )}
+              {filteredPlayers.length !== players.length && (
+                <span className="text-xs text-muted-foreground font-mono-data">
+                  {filteredPlayers.length} of {players.length} players
+                </span>
+              )}
             </div>
 
             {error && (
@@ -150,9 +186,11 @@ export default function VisualAnalyticsPage() {
                       </div>
                     ))}
                   </div>
+                ) : filteredPlayers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No players match the current filter.</p>
                 ) : (
                   <div className="space-y-1.5">
-                    {[...players]
+                    {[...filteredPlayers]
                       .filter((p) => p.exitVelocityAvg !== null)
                       .sort((a, b) => (b.exitVelocityAvg ?? 0) - (a.exitVelocityAvg ?? 0))
                       .slice(0, 10)
@@ -160,7 +198,12 @@ export default function VisualAnalyticsPage() {
                         <div key={p.id} className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
                             <span className="font-mono-data text-muted-foreground w-4">{i + 1}</span>
-                            <span className="font-medium text-foreground">{p.name}</span>
+                            <Link
+                              href={`/player-props/${p.id}`}
+                              className="font-medium text-foreground hover:text-primary transition-colors"
+                            >
+                              {p.name}
+                            </Link>
                             <span className="text-muted-foreground">{p.team}</span>
                           </div>
                           <div className="flex items-center gap-3">

@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
 interface TeamRecord {
   rank: number;
@@ -29,6 +30,7 @@ export default function TeamRankingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [division, setDivision] = useState('All');
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -48,7 +50,11 @@ export default function TeamRankingsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const filtered = division === 'All' ? teams : teams.filter((t) => t.division === division);
+  const filtered = teams.filter((t) => {
+    if (division !== 'All' && t.division !== division) return false;
+    if (search && !t.team.toLowerCase().includes(search.toLowerCase()) && !t.abbrev.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <AppLayout>
@@ -71,21 +77,32 @@ export default function TeamRankingsPage() {
               </div>
             )}
 
-            {/* Division filter tabs */}
-            <div className="flex gap-2 flex-wrap">
-              {DIVISIONS.map((div) => (
-                <button
-                  key={div}
-                  onClick={() => setDivision(div)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                    division === div
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  {div}
-                </button>
-              ))}
+            {/* Search + Division filter */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search team…"
+                  className="pl-3 pr-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-40"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {DIVISIONS.map((div) => (
+                  <button
+                    key={div}
+                    onClick={() => setDivision(div)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                      division === div
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    {div}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Standings table */}
@@ -93,6 +110,9 @@ export default function TeamRankingsPage() {
               <div className="px-4 py-3 border-b border-border flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-foreground">
                   {division === 'All' ? 'MLB Standings' : division}
+                  {filtered.length !== teams.length && (
+                    <span className="ml-2 text-xs text-muted-foreground font-normal">({filtered.length} teams)</span>
+                  )}
                 </h2>
                 {fetchedAt && (
                   <span className="text-xs text-muted-foreground font-mono-data">
@@ -131,16 +151,21 @@ export default function TeamRankingsPage() {
                     ) : filtered.length === 0 ? (
                       <tr>
                         <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                          No teams found for this division.
+                          No teams found for this filter.
                         </td>
                       </tr>
                     ) : (
                       filtered.map((row) => (
-                        <tr key={row.rank} className="hover:bg-muted/20 transition-colors">
+                        <tr key={row.rank} className="hover:bg-muted/20 transition-colors cursor-pointer">
                           <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{row.rank}</td>
                           <td className="px-4 py-3 font-medium text-foreground">
-                            <span className="hidden sm:inline">{row.team}</span>
-                            <span className="sm:hidden font-mono-data">{row.abbrev}</span>
+                            <Link
+                              href={`/team-rankings?team=${row.abbrev}`}
+                              className="hover:text-primary transition-colors"
+                            >
+                              <span className="hidden sm:inline">{row.team}</span>
+                              <span className="sm:hidden font-mono-data">{row.abbrev}</span>
+                            </Link>
                           </td>
                           <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{row.division}</td>
                           <td className="px-4 py-3 text-center font-mono-data text-xs font-semibold text-positive">{row.wins}</td>

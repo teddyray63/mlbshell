@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
 import { AlertTriangle, RefreshCw, Download } from 'lucide-react';
+import PlayerSearch from '@/components/filters/PlayerSearch';
 
 interface SavedEdge {
   id: string;
@@ -29,6 +30,7 @@ export default function SavedEdgesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [playerSearch, setPlayerSearch] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -71,6 +73,11 @@ export default function SavedEdgesPage() {
     }
   };
 
+  const filteredEdges = edges.filter((e) => {
+    if (!playerSearch) return true;
+    return e.player.toLowerCase().includes(playerSearch.toLowerCase());
+  });
+
   return (
     <AppLayout>
       <ErrorBoundary>
@@ -78,7 +85,7 @@ export default function SavedEdgesPage() {
           <Topbar title="Saved Edges" subtitle="Your bookmarked prop edges & betting opportunities" dataSource="live" />
           <div className="flex-1 p-6 space-y-6 max-w-screen-2xl mx-auto w-full">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {(['all', 'high', 'medium', 'low'] as const).map((f) => (
                   <button
                     key={f}
@@ -92,6 +99,13 @@ export default function SavedEdgesPage() {
                     {f === 'all' ? 'All Edges' : `${f} Confidence`}
                   </button>
                 ))}
+                <PlayerSearch
+                  value={playerSearch}
+                  onChange={setPlayerSearch}
+                  placeholder="Search player…"
+                  className="w-44"
+                  showDropdown={false}
+                />
               </div>
               <button
                 onClick={handleExportCSV}
@@ -129,7 +143,7 @@ export default function SavedEdgesPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {edges.map((edge) => (
+                {filteredEdges.map((edge) => (
                   <div key={edge.id} className="card-surface rounded-lg border border-border p-4 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -164,9 +178,11 @@ export default function SavedEdgesPage() {
                     </div>
                   </div>
                 ))}
-                {edges.length === 0 && !loading && (
+                {filteredEdges.length === 0 && !loading && (
                   <div className="card-surface rounded-lg border border-border p-8 text-center">
-                    <p className="text-muted-foreground text-sm">No saved edges for this filter.</p>
+                    <p className="text-muted-foreground text-sm">
+                      {playerSearch ? `No saved edges for "${playerSearch}".` : 'No saved edges for this filter.'}
+                    </p>
                   </div>
                 )}
               </div>
