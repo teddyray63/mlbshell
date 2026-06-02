@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
+} from "@tanstack/react-table";
+import type {
+  ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
 import { CheckCircle, Clock, AlertTriangle, Minus, ChevronUp, ChevronDown } from "lucide-react";
@@ -21,12 +23,15 @@ const stateIcons: Record<FieldState, React.ReactNode> = {
 };
 
 const dqLabels: Record<keyof DataQuality, string> = {
+  roster: "Roster",
   lineup: "Lineup",
-  pitcher: "Pitcher",
+  slot: "Slot",
+  hand_split: "Hand Split",
+  pitch_rv: "Pitch RV",
+  barrel_ev: "Barrel/EV",
+  game_context: "Game Context",
+  park_factor: "Park Factor",
   weather: "Weather",
-  odds: "Odds",
-  statcast: "Statcast",
-  splits: "Splits",
 };
 
 function DQIcon({ label, state }: { label: string; state: FieldState }) {
@@ -104,6 +109,13 @@ export function MLBCheatsheetTable({ data }: { data: HitterProjection[] }) {
       header: "TB",
       cell: ({ row }) => (
         <span className="font-mono-data text-xs">{row.original.tb_proj.toFixed(2)}</span>
+      ),
+    },
+    {
+      accessorKey: "k_proj",
+      header: "K",
+      cell: ({ row }) => (
+        <span className="font-mono-data text-xs">{row.original.k_proj.toFixed(2)}</span>
       ),
     },
     {

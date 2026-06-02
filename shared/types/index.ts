@@ -112,32 +112,38 @@ export interface SavedEdge {
 export type FieldState = 'confirmed' | 'projected' | 'missing' | 'unavailable' | 'skip';
 
 export interface DataQuality {
+  roster: FieldState;
   lineup: FieldState;
-  pitcher: FieldState;
+  slot: FieldState;
+  hand_split: FieldState;
+  pitch_rv: FieldState;
+  barrel_ev: FieldState;
+  game_context: FieldState;
+  park_factor: FieldState;
   weather: FieldState;
-  odds: FieldState;
-  statcast?: FieldState;
-  splits?: FieldState;
 }
 
 export interface HitterProjection {
-  id: string;
+  id: number;
+  game_id: string;
+  player_id: string;
   full_name: string;
   team: string;
-  opponent?: string;
-  game_id?: string;
+  projected_score: number;
+  raw_score: number;
+  final_multiplier: number;
   hits_proj: number;
   hr_proj: number;
   tb_proj: number;
-  rbi_proj?: number;
-  projected_score: number;
-  final_multiplier: number;
-  data_gap: boolean;
+  k_proj: number;
   dq: DataQuality;
+  overall_dq_score: number;
+  data_gap: boolean;
+  vs_pitcher?: string;
 }
 
 export interface SafeComputationResult {
-  value: number | null;
-  confidence: 'high' | 'medium' | 'low' | 'none';
-  reason?: string;
+  value: number;
+  state: FieldState;
+  explanation?: string;
 }
