@@ -10,7 +10,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import PlayerSearch from '@/components/filters/PlayerSearch';
 import TeamFilter from '@/components/filters/TeamFilter';
 import GameFilter from '@/components/filters/GameFilter';
-import { MOCK_GAMES } from '@/data/mlbGames';
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -61,6 +61,8 @@ export default function PlayerPropsPage() {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedGame, setSelectedGame] = useState('');
   const [propType, setPropType] = useState('All');
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -77,7 +79,13 @@ export default function PlayerPropsPage() {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, [loadData]);
 
   const filteredProps = useMemo(() => {
     return props.filter((p) => {
@@ -85,12 +93,12 @@ export default function PlayerPropsPage() {
       if (selectedTeam && p.team !== selectedTeam) return false;
       if (propType !== 'All' && p.prop !== propType) return false;
       if (selectedGame) {
-        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        const game = games.find((g) => g.id === selectedGame);
         if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
       }
       return true;
     });
-  }, [props, playerSearch, selectedTeam, propType, selectedGame]);
+  }, [props, playerSearch, selectedTeam, propType, selectedGame, games]);
 
   const hasFilters = playerSearch || selectedTeam || selectedGame || propType !== 'All';
 
@@ -110,7 +118,7 @@ export default function PlayerPropsPage() {
                   className="w-48"
                 />
                 <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
-                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel loading={loading} />
+                <GameFilter games={games} value={selectedGame} onChange={setSelectedGame} showLabel loading={gamesLoading} />
                 <div className="flex items-center gap-2 ml-auto">
                   <span className="text-xs font-mono-data text-muted-foreground">{filteredProps.length} props</span>
                   <button onClick={loadData} disabled={loading} className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 flex items-center gap-1">

@@ -12,7 +12,7 @@ import Link from 'next/link';
 import PlayerSearch from '@/components/filters/PlayerSearch';
 import TeamFilter from '@/components/filters/TeamFilter';
 import GameFilter from '@/components/filters/GameFilter';
-import { MOCK_GAMES } from '@/data/mlbGames';
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -44,6 +44,8 @@ export default function PropAnalyzerPage() {
   const [selectedGame, setSelectedGame] = useState('');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -60,7 +62,13 @@ export default function PropAnalyzerPage() {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, [loadData]);
 
   const handleSaveEdge = useCallback(async (prop: PropLine) => {
     if (savedIds.has(prop.id) || savingId) return;
@@ -96,12 +104,12 @@ export default function PropAnalyzerPage() {
       const matchEdge = (p.edge ?? 0) >= minEdge;
       const matchTeam = !selectedTeam || p.team === selectedTeam;
       const matchGame = !selectedGame || (() => {
-        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        const game = games.find((g) => g.id === selectedGame);
         return !game || p.team === game.homeTeam || p.team === game.awayTeam;
       })();
       return matchSearch && matchType && matchEdge && matchTeam && matchGame;
     }).sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
-  }, [props, search, propType, minEdge, selectedTeam, selectedGame]);
+  }, [props, search, propType, minEdge, selectedTeam, selectedGame, games]);
 
   const topEdge = filtered[0];
   const evPlusCount = filtered.filter((p) => (p.edge ?? 0) > 3).length;
@@ -132,7 +140,7 @@ export default function PropAnalyzerPage() {
                   className="w-full sm:w-56"
                 />
                 <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
-                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel />
+                <GameFilter games={games} value={selectedGame} onChange={setSelectedGame} showLabel loading={gamesLoading} />
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter size={13} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Min Edge:</span>
@@ -256,10 +264,10 @@ export default function PropAnalyzerPage() {
                             <button
                               onClick={() => handleSaveEdge(prop)}
                               disabled={savedIds.has(prop.id) || savingId === prop.id}
-                              className={`p-1 rounded transition-colors ${savedIds.has(prop.id) ? 'text-positive' : 'text-muted-foreground hover:text-primary'} disabled:opacity-50`}
-                              title={savedIds.has(prop.id) ? 'Saved' : 'Save edge'}
+                              className="text-muted-foreground hover:text-positive transition-colors disabled:opacity-40"
+                              title="Save edge"
                             >
-                              {savedIds.has(prop.id) ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+                              {savedIds.has(prop.id) ? <BookmarkCheck size={13} className="text-positive" /> : <Bookmark size={13} />}
                             </button>
                           </td>
                         </tr>

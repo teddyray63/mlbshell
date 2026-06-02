@@ -6,7 +6,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
 import { Wind, Thermometer, Droplets, Eye, MapPin, AlertTriangle, RefreshCw } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
-import { MOCK_GAMES } from '@/data/mlbGames';
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
 
 const VENUES = [
   { id: 'yankee-stadium',   label: 'Yankee Stadium',  team: 'NYY' },
@@ -52,6 +52,8 @@ export default function WeatherParkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState('');
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
 
   const loadWeather = useCallback(async (venue: string) => {
     setLoading(true);
@@ -68,13 +70,19 @@ export default function WeatherParkPage() {
     }
   }, []);
 
-  useEffect(() => { loadWeather(selectedVenue); }, [loadWeather, selectedVenue]);
+  useEffect(() => {
+    loadWeather(selectedVenue);
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, [loadWeather, selectedVenue]);
 
   // When a game is selected, auto-select the home team's venue
   const handleGameSelect = (gameId: string) => {
     setSelectedGame(gameId);
     if (!gameId) return;
-    const game = MOCK_GAMES.find((g) => g.id === gameId);
+    const game = games.find((g) => g.id === gameId);
     if (!game) return;
     const venue = VENUES.find((v) => v.team === game.homeTeam);
     if (venue) setSelectedVenue(venue.id);
@@ -95,10 +103,11 @@ export default function WeatherParkPage() {
                 <select
                   value={selectedGame}
                   onChange={(e) => handleGameSelect(e.target.value)}
-                  className="px-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  disabled={gamesLoading}
+                  className="px-3 py-2 rounded-md bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
                 >
-                  <option value="">Select Game</option>
-                  {MOCK_GAMES.map((g) => (
+                  <option value="">{gamesLoading ? 'Loading games…' : 'Select Game'}</option>
+                  {games.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.awayTeam} @ {g.homeTeam}{g.status === 'live' ? ' 🔴' : g.status === 'final' ? ' ✓' : ` · ${g.time}`}
                     </option>
@@ -252,8 +261,8 @@ export default function WeatherParkPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="card-surface p-4 flex items-center justify-center text-muted-foreground text-sm">
-                    Park factor data not available for this venue.
+                  <div className="card-surface p-4 flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground">Park factor data not available for this venue.</p>
                   </div>
                 )}
               </div>

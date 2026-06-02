@@ -10,14 +10,23 @@ import OddsComparison from './OddsComparison';
 import PlayerSearch from '@/components/filters/PlayerSearch';
 import TeamFilter from '@/components/filters/TeamFilter';
 import GameFilter from '@/components/filters/GameFilter';
-import { MOCK_GAMES } from '@/data/mlbGames';
-
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
+import { useEffect } from 'react';
 
 export default function BettingIntelligencePage() {
   const [activeTab, setActiveTab] = useState<'props' | 'odds' | 'calculator'>('props');
   const [playerSearch, setPlayerSearch] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedGame, setSelectedGame] = useState('');
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, []);
 
   const handleTabChange = useCallback((tab: 'props' | 'odds' | 'calculator') => {
     setActiveTab(tab);
@@ -45,7 +54,7 @@ export default function BettingIntelligencePage() {
             className="w-48"
           />
           <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
-          <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel />
+          <GameFilter games={games} value={selectedGame} onChange={setSelectedGame} showLabel loading={gamesLoading} />
           {hasFilters && (
             <button
               onClick={() => { setPlayerSearch(''); setSelectedTeam(''); setSelectedGame(''); }}
@@ -68,7 +77,7 @@ export default function BettingIntelligencePage() {
               onClick={() => handleTabChange(tab.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 activeTab === tab.key
-                  ? 'border-primary text-primary' :'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.label}
@@ -81,6 +90,7 @@ export default function BettingIntelligencePage() {
             playerFilter={playerSearch}
             teamFilter={selectedTeam}
             gameFilter={selectedGame}
+            games={games}
           />
         )}
         {activeTab === 'odds' && <OddsComparison />}

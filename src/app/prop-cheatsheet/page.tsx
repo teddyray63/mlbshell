@@ -11,7 +11,7 @@ import Link from 'next/link';
 import PlayerSearch from '@/components/filters/PlayerSearch';
 import TeamFilter from '@/components/filters/TeamFilter';
 import GameFilter from '@/components/filters/GameFilter';
-import { MOCK_GAMES } from '@/data/mlbGames';
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
 
 interface PropLine {
   id: string;
@@ -40,6 +40,8 @@ export default function PropCheatsheetPage() {
   const [playerSearch, setPlayerSearch] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedGame, setSelectedGame] = useState('');
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -56,7 +58,13 @@ export default function PropCheatsheetPage() {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     const base = props.filter((p) => {
@@ -64,13 +72,13 @@ export default function PropCheatsheetPage() {
       if (playerSearch && !p.player.toLowerCase().includes(playerSearch.toLowerCase())) return false;
       if (selectedTeam && p.team !== selectedTeam) return false;
       if (selectedGame) {
-        const game = MOCK_GAMES.find((g) => g.id === selectedGame);
+        const game = games.find((g) => g.id === selectedGame);
         if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
       }
       return true;
     });
     return [...base].sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
-  }, [props, propType, playerSearch, selectedTeam, selectedGame]);
+  }, [props, propType, playerSearch, selectedTeam, selectedGame, games]);
 
   const plays = filtered.filter((p) => (p.edge ?? 0) > 3);
   const fades = filtered.filter((p) => (p.edge ?? 0) < -2);
@@ -94,7 +102,7 @@ export default function PropCheatsheetPage() {
                   className="w-48"
                 />
                 <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
-                <GameFilter games={MOCK_GAMES} value={selectedGame} onChange={setSelectedGame} showLabel />
+                <GameFilter games={games} value={selectedGame} onChange={setSelectedGame} showLabel loading={gamesLoading} />
                 {(playerSearch || selectedTeam || selectedGame) && (
                   <button
                     onClick={() => { setPlayerSearch(''); setSelectedTeam(''); setSelectedGame(''); }}
@@ -249,31 +257,44 @@ export default function PropCheatsheetPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
-                      {['Player', 'Team', 'Prop', 'Line', 'Over', 'Under', 'Proj', 'Edge', 'Signal'].map((h) => (
+                      {['Player', 'Team', 'Opp', 'Prop', 'Line', 'Proj', 'Edge', 'Hit Rate', 'Signal'].map((h) => (
                         <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-left whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {loading
-                      ? Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} cols={9} />)
+                      ? Array.from({ length: 8 }).map((_, i) => <TableRowSkeleton key={i} cols={9} />)
+                      : filtered.length === 0
+                      ? (
+                        <tr>
+                          <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                            No props match the current filters.
+                          </td>
+                        </tr>
+                      )
                       : filtered.map((p, i) => (
                         <tr key={p.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
                           <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
-                            <Link href={`/player-props/${p.id}`} className="hover:text-primary transition-colors">
-                              {p.player}
-                            </Link>
+                            <Link href={`/player-props/${p.id}`} className="hover:text-primary transition-colors">{p.player}</Link>
                           </td>
                           <td className="px-3 py-2.5 font-mono-data text-xs text-muted-foreground">{p.team}</td>
+                          <td className="px-3 py-2.5 text-xs text-muted-foreground">{p.opponent}</td>
                           <td className="px-3 py-2.5 text-xs text-foreground">{p.prop}</td>
                           <td className="px-3 py-2.5 font-mono-data text-xs font-semibold">{p.line}</td>
-                          <td className="px-3 py-2.5 font-mono-data text-xs text-muted-foreground">{p.overOdds > 0 ? `+${p.overOdds}` : p.overOdds}</td>
-                          <td className="px-3 py-2.5 font-mono-data text-xs text-muted-foreground">{p.underOdds > 0 ? `+${p.underOdds}` : p.underOdds}</td>
                           <td className="px-3 py-2.5 font-mono-data text-xs text-primary font-semibold">{p.projection?.toFixed(1) ?? '—'}</td>
                           <td className="px-3 py-2.5">
                             <span className={`font-mono-data text-xs font-bold ${(p.edge ?? 0) >= 3 ? 'text-positive' : (p.edge ?? 0) <= -2 ? 'text-negative' : 'text-muted-foreground'}`}>
                               {(p.edge ?? 0) >= 0 ? '+' : ''}{(p.edge ?? 0).toFixed(1)}%
                             </span>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${(p.hitRate ?? 0) >= 0.6 ? 'bg-positive' : (p.hitRate ?? 0) >= 0.5 ? 'bg-warning' : 'bg-negative'}`} style={{ width: `${Math.round((p.hitRate ?? 0) * 100)}%` }} />
+                              </div>
+                              <span className="text-xs font-mono-data text-muted-foreground">{Math.round((p.hitRate ?? 0) * 100)}%</span>
+                            </div>
                           </td>
                           <td className="px-3 py-2.5">
                             <StatusBadge variant={p.status === 'steam' ? 'warning' : p.status === 'value' ? 'positive' : p.status === 'fade' ? 'negative' : 'neutral'}>

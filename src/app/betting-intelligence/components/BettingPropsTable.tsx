@@ -39,9 +39,10 @@ interface BettingPropsTableProps {
   playerFilter?: string;
   teamFilter?: string;
   gameFilter?: string;
+  games?: import('@/data/mlbGames').MLBGame[];
 }
 
-export default function BettingPropsTable({ playerFilter = '', teamFilter = '', gameFilter = '' }: BettingPropsTableProps) {
+export default function BettingPropsTable({ playerFilter = '', teamFilter = '', gameFilter = '', games = [] }: BettingPropsTableProps) {
   const [props, setProps] = useState<PropLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,10 @@ export default function BettingPropsTable({ playerFilter = '', teamFilter = '', 
       if (filter !== 'all' && p.status !== filter) return false;
       if (playerFilter && !p.player.toLowerCase().includes(playerFilter.toLowerCase())) return false;
       if (teamFilter && p.team !== teamFilter) return false;
+      if (gameFilter && games.length > 0) {
+        const game = games.find((g) => g.id === gameFilter);
+        if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
+      }
       return true;
     })
     .sort((a, b) => {
