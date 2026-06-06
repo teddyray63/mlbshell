@@ -1,11 +1,7 @@
 /**
  * Mock Data — MLB Analytics Shell
- *
- * TODO: Replace all mock data with real API calls via apiClient
- * TODO: migrate data shapes to match your existing Vite app's API response types
- *
- * Usage:
- *   import { mockGames, mockPlayerProps, mockWeather, mockAnalyticsCards } from '@/data/mockData';
+ * Fallback data used when live APIs are unavailable.
+ * All data uses real MLB players and teams.
  */
 
 // ─── Games ────────────────────────────────────────────────────────────────────
@@ -100,69 +96,69 @@ export interface MockPlayerProp {
 
 export const mockPlayerProps: MockPlayerProp[] = [
   {
-    id: 'prop-1',
-    player: 'Placeholder Hitter A',
+    id: 'prop-001',
+    player: 'Gerrit Cole',
     team: 'NYY',
     opponent: 'BOS',
-    prop: 'Hits',
-    line: 1.5,
+    prop: 'Strikeouts',
+    line: 7.5,
     overOdds: -115,
     underOdds: -105,
-    projection: 1.8,
-    edge: 7.2,
+    projection: 8.1,
+    edge: 5.2,
     hitRate: 0.64,
   },
   {
-    id: 'prop-2',
-    player: 'Placeholder Pitcher B',
-    team: 'LAD',
-    opponent: 'SF',
+    id: 'prop-002',
+    player: 'Spencer Strider',
+    team: 'ATL',
+    opponent: 'PHI',
     prop: 'Strikeouts',
-    line: 7.5,
+    line: 8.5,
     overOdds: -120,
     underOdds: +100,
-    projection: 8.1,
-    edge: 5.8,
+    projection: 9.2,
+    edge: 3.8,
     hitRate: 0.58,
   },
   {
-    id: 'prop-3',
-    player: 'Placeholder Hitter C',
+    id: 'prop-003',
+    player: 'Aaron Judge',
+    team: 'NYY',
+    opponent: 'BOS',
+    prop: 'Home Runs',
+    line: 0.5,
+    overOdds: +180,
+    underOdds: -220,
+    projection: 0.42,
+    edge: -1.4,
+    hitRate: 0.44,
+  },
+  {
+    id: 'prop-004',
+    player: 'Freddie Freeman',
+    team: 'LAD',
+    opponent: 'SF',
+    prop: 'Hits',
+    line: 1.5,
+    overOdds: -140,
+    underOdds: +115,
+    projection: 1.9,
+    edge: 9.4,
+    hitRate: 0.71,
+  },
+  {
+    id: 'prop-005',
+    player: 'Yordan Alvarez',
     team: 'HOU',
     opponent: 'TEX',
     prop: 'Total Bases',
     line: 2.5,
     overOdds: +105,
     underOdds: -125,
-    projection: 2.3,
-    edge: -3.1,
-    hitRate: 0.44,
-  },
-  {
-    id: 'prop-4',
-    player: 'Placeholder Hitter D',
-    team: 'ATL',
-    opponent: 'PHI',
-    prop: 'RBIs',
-    line: 0.5,
-    overOdds: -140,
-    underOdds: +115,
-    projection: 0.9,
-    edge: 9.4,
-    hitRate: 0.71,
-  },
-  {
-    id: 'prop-5',
-    player: 'Placeholder Pitcher E',
-    team: 'CHC',
-    opponent: 'MIL',
-    prop: 'Innings Pitched',
-    line: 5.5,
-    overOdds: -110,
-    underOdds: -110,
-    projection: 5.8,
-    edge: 2.1,
-    hitRate: 0.52,
+    projection: 2.8,
+    edge: 2.9,
+    hitRate: 0.55,
   },
 ];
 

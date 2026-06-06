@@ -1,26 +1,376 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import TodoMarker from '@/components/ui/TodoMarker';
 import Topbar from '@/components/Topbar';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
+import { AlertTriangle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import Link from 'next/link';
+import PlayerSearch from '@/components/filters/PlayerSearch';
+import TeamFilter from '@/components/filters/TeamFilter';
+import GameFilter from '@/components/filters/GameFilter';
+import { fetchTodaysGames, type MLBGame } from '@/data/mlbGames';
+import { MLBCheatsheetTable } from '@/components/mlb-cheatsheet-table';
+import type { HitterProjection } from '../../../shared/types';
 
-// TODO: Paste your existing PropCheatsheet page logic here
+interface PropLine {
+  id: string;
+  player: string;
+  team: string;
+  opponent: string;
+  prop: string;
+  line: number;
+  overOdds: number;
+  underOdds: number;
+  projection?: number;
+  edge?: number;
+  hitRate?: number;
+  status: string;
+  sharp: boolean;
+  consensus: number;
+}
+
+const PROP_TYPES = ['All', 'Strikeouts', 'Hits', 'Home Runs', 'Total Bases', 'RBIs'];
+
 export default function PropCheatsheetPage() {
+  const [props, setProps] = useState<PropLine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [propType, setPropType] = useState('All');
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedGame, setSelectedGame] = useState('');
+  const [games, setGames] = useState<MLBGame[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
+  const [hitterProjections, setHitterProjections] = useState<HitterProjection[]>([]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const res = await fetch(`/api/player-props?date=${date}`);
+      const json = await res.json();
+      setProps(json.props ?? []);
+
+      // Build hitter projections from props data
+      const hittersMap = new Map<string, HitterProjection>();
+      for (const p of (json.props ?? []) as PropLine[]) {
+        if (!hittersMap.has(p.id)) {
+          hittersMap.set(p.id, {
+            id: p.id,
+            full_name: p.player,
+            team: p.team,
+            opponent: p.opponent,
+            hits_proj: p.prop === 'Hits' ? (p.projection ?? 0) : 0,
+            hr_proj: p.prop === 'Home Runs' ? (p.projection ?? 0) : 0,
+            tb_proj: p.prop === 'Total Bases' ? (p.projection ?? 0) : 0,
+            projected_score: p.projection ?? 0,
+            final_multiplier: 1,
+            data_gap: false,
+            dq: {
+              lineup: 'projected',
+              pitcher: 'projected',
+              weather: 'projected',
+              odds: p.overOdds !== undefined ? 'confirmed' : 'missing',
+            },
+          });
+        } else {
+          const existing = hittersMap.get(p.id)!;
+          if (p.prop === 'Hits') existing.hits_proj = p.projection ?? existing.hits_proj;
+          if (p.prop === 'Home Runs') existing.hr_proj = p.projection ?? existing.hr_proj;
+          if (p.prop === 'Total Bases') existing.tb_proj = p.projection ?? existing.tb_proj;
+          existing.projected_score = Math.max(existing.projected_score, p.projection ?? 0);
+        }
+      }
+      setHitterProjections(Array.from(hittersMap.values()));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load props');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    fetchTodaysGames()
+      .then(setGames)
+      .catch(() => setGames([]))
+      .finally(() => setGamesLoading(false));
+  }, [loadData]);
+
+  const filtered = useMemo(() => {
+    const base = props.filter((p) => {
+      if (propType !== 'All' && p.prop !== propType) return false;
+      if (playerSearch && !p.player.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+      if (selectedTeam && p.team !== selectedTeam) return false;
+      if (selectedGame) {
+        const game = games.find((g) => g.id === selectedGame);
+        if (game && p.team !== game.homeTeam && p.team !== game.awayTeam) return false;
+      }
+      return true;
+    });
+    return [...base].sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0));
+  }, [props, propType, playerSearch, selectedTeam, selectedGame, games]);
+
+  const plays = filtered.filter((p) => (p.edge ?? 0) > 3);
+  const fades = filtered.filter((p) => (p.edge ?? 0) < -2);
+  const neutral = filtered.filter((p) => (p.edge ?? 0) >= -2 && (p.edge ?? 0) <= 3);
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const filteredHitters = useMemo(() => {
+    return hitterProjections.filter((h) => {
+      if (playerSearch && !h.full_name.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+      if (selectedTeam && h.team !== selectedTeam) return false;
+      if (selectedGame) {
+        const game = games.find((g) => g.id === selectedGame);
+        if (game && h.team !== game.homeTeam && h.team !== game.awayTeam) return false;
+      }
+      return true;
+    });
+  }, [hitterProjections, playerSearch, selectedTeam, selectedGame, games]);
+
   return (
     <AppLayout>
       <ErrorBoundary>
         <div className="flex flex-col min-h-screen">
-          <Topbar title="Prop Cheatsheet" subtitle="Quick-reference prop summary for today's slate" />
-          <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full">
-            <TodoMarker
-              pageName="PropCheatsheet"
-              description="Drop in your existing PropCheatsheet component here. Update API imports to use @/api/client."
-            />
-            <div className="mt-6 card-surface p-8 flex flex-col items-center justify-center min-h-[400px] border-dashed border-2 border-border">
-              <p className="text-muted-foreground text-sm font-semibold mb-1">PropCheatsheet — Shell Ready</p>
-              <p className="text-xs text-muted-foreground text-center max-w-xs">
-                Paste your existing Vite React PropCheatsheet component here. API calls should route through <code className="font-mono-data text-primary">@/api/client</code>.
-              </p>
+          <Topbar title="Prop Cheatsheet" subtitle={`Quick-reference prop summary — ${today}`} dataSource={loading ? 'mock' : 'live'} />
+          <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-6">
+            {/* Filters */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3 items-center">
+                <PlayerSearch
+                  value={playerSearch}
+                  onChange={setPlayerSearch}
+                  placeholder="Search player…"
+                  className="w-48"
+                />
+                <TeamFilter value={selectedTeam} onChange={setSelectedTeam} showLabel />
+                <GameFilter games={games} value={selectedGame} onChange={setSelectedGame} showLabel loading={gamesLoading} />
+                {(playerSearch || selectedTeam || selectedGame) && (
+                  <button
+                    onClick={() => { setPlayerSearch(''); setSelectedTeam(''); setSelectedGame(''); }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/50"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {/* Prop type filter */}
+              <div className="flex flex-wrap gap-2">
+                {PROP_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPropType(t)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${propType === t ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-negative/10 border border-negative/30 text-sm text-negative">
+                <AlertTriangle size={16} className="shrink-0" />
+                <span className="flex-1"><strong>Error:</strong> {error}</span>
+                <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-negative/20 hover:bg-negative/30 text-xs font-semibold transition-colors">
+                  <RefreshCw size={12} /> Retry
+                </button>
+              </div>
+            )}
+
+            {/* Three-column cheatsheet */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Plays (EV+) */}
+              <div className="card-surface overflow-hidden">
+                <div className="p-3 border-b border-border flex items-center gap-2 bg-positive/5">
+                  <TrendingUp size={14} className="text-positive" />
+                  <span className="text-sm font-semibold text-positive">Plays ({plays.length})</span>
+                  <span className="text-xs text-muted-foreground ml-auto">EV &gt; +3%</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
+                  ) : plays.length === 0 ? (
+                    <p className="px-3 py-4 text-xs text-muted-foreground text-center">No EV+ plays for this filter.</p>
+                  ) : plays.map((p) => (
+                    <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                      <div className="min-w-0">
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {p.sharp && <StatusBadge variant="sharp" dot>S</StatusBadge>}
+                        <span className="font-mono-data text-xs font-bold text-positive">+{(p.edge ?? 0).toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Neutral */}
+              <div className="card-surface overflow-hidden">
+                <div className="p-3 border-b border-border flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-muted-foreground/40" />
+                  <span className="text-sm font-semibold text-foreground">Neutral ({neutral.length})</span>
+                  <span className="text-xs text-muted-foreground ml-auto">-2% to +3%</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
+                  ) : neutral.length === 0 ? (
+                    <p className="px-3 py-4 text-xs text-muted-foreground text-center">No neutral props.</p>
+                  ) : neutral.map((p) => (
+                    <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                      <div className="min-w-0">
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
+                      </div>
+                      <span className="font-mono-data text-xs text-muted-foreground flex-shrink-0 ml-2">
+                        {(p.edge ?? 0) >= 0 ? '+' : ''}{(p.edge ?? 0).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fades */}
+              <div className="card-surface overflow-hidden">
+                <div className="p-3 border-b border-border flex items-center gap-2 bg-negative/5">
+                  <TrendingDown size={14} className="text-negative" />
+                  <span className="text-sm font-semibold text-negative">Fades ({fades.length})</span>
+                  <span className="text-xs text-muted-foreground ml-auto">EV &lt; -2%</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="px-3 py-2.5 flex items-center justify-between animate-pulse">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="h-3 bg-muted rounded w-3/4" />
+                          <div className="h-2.5 bg-muted rounded w-1/2" />
+                        </div>
+                        <div className="h-3 bg-muted rounded w-10 ml-2 flex-shrink-0" />
+                      </div>
+                    ))
+                  ) : fades.length === 0 ? (
+                    <p className="px-3 py-4 text-xs text-muted-foreground text-center">No fade props.</p>
+                  ) : fades.map((p) => (
+                    <div key={p.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                      <div className="min-w-0">
+                        <Link href={`/player-props/${p.id}`} className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors block">
+                          {p.player}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">{p.prop} {p.line} · {p.team}</p>
+                      </div>
+                      <span className="font-mono-data text-xs font-bold text-negative flex-shrink-0 ml-2">
+                        {(p.edge ?? 0).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Hitter Projections Table */}
+            {!loading && filteredHitters.length > 0 && (
+              <div className="card-surface overflow-hidden">
+                <div className="p-4 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">
+                    Hitter Projections — {filteredHitters.length} Players
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sorted by projected score · click column headers to re-sort
+                  </p>
+                </div>
+                <div className="p-4">
+                  <MLBCheatsheetTable data={filteredHitters} />
+                </div>
+              </div>
+            )}
+
+            {/* Full table */}
+            <div className="card-surface overflow-hidden">
+              <div className="p-4 border-b border-border">
+                <p className="text-sm font-semibold text-foreground">Full Slate — {filtered.length} Props</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      {['Player', 'Team', 'Opp', 'Prop', 'Line', 'Proj', 'Edge', 'Hit Rate', 'Signal'].map((h) => (
+                        <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-left whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading
+                      ? Array.from({ length: 8 }).map((_, i) => <TableRowSkeleton key={i} cols={9} />)
+                      : filtered.length === 0
+                      ? (
+                        <tr>
+                          <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                            No props match the current filters.
+                          </td>
+                        </tr>
+                      )
+                      : filtered.map((p, i) => (
+                        <tr key={p.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                          <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
+                            <Link href={`/player-props/${p.id}`} className="hover:text-primary transition-colors">{p.player}</Link>
+                          </td>
+                          <td className="px-3 py-2.5 font-mono-data text-xs text-muted-foreground">{p.team}</td>
+                          <td className="px-3 py-2.5 text-xs text-muted-foreground">{p.opponent}</td>
+                          <td className="px-3 py-2.5 text-xs text-foreground">{p.prop}</td>
+                          <td className="px-3 py-2.5 font-mono-data text-xs font-semibold">{p.line}</td>
+                          <td className="px-3 py-2.5 font-mono-data text-xs text-primary font-semibold">{p.projection?.toFixed(1) ?? '—'}</td>
+                          <td className="px-3 py-2.5">
+                            <span className={`font-mono-data text-xs font-bold ${(p.edge ?? 0) >= 3 ? 'text-positive' : (p.edge ?? 0) <= -2 ? 'text-negative' : 'text-muted-foreground'}`}>
+                              {(p.edge ?? 0) >= 0 ? '+' : ''}{(p.edge ?? 0).toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${(p.hitRate ?? 0) >= 0.6 ? 'bg-positive' : (p.hitRate ?? 0) >= 0.5 ? 'bg-warning' : 'bg-negative'}`} style={{ width: `${Math.round((p.hitRate ?? 0) * 100)}%` }} />
+                              </div>
+                              <span className="text-xs font-mono-data text-muted-foreground">{Math.round((p.hitRate ?? 0) * 100)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <StatusBadge variant={p.status === 'steam' ? 'warning' : p.status === 'value' ? 'positive' : p.status === 'fade' ? 'negative' : 'neutral'}>
+                              {p.status}
+                            </StatusBadge>
+                          </td>
+                        </tr>
+                      ))
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
