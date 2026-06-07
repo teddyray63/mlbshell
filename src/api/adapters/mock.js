@@ -23,6 +23,8 @@ import {
   buildMockHRTargets,
   buildMockDeepDive,
   buildMockDeepDiveList,
+  buildMockPlayerPage,
+  buildMockStatsPage,
 } from '../../data/mockMatchup';
 
 const EDGES_KEY = (userId) => `mlbshell:saved-edges:${userId || 'guest'}`;
@@ -137,6 +139,16 @@ class MockAdapter {
   /** Selectable pitchers for the Player Deep Dive search. */
   async getDeepDiveList() {
     return buildMockDeepDiveList();
+  }
+
+  /** Player page (header, season line, game logs) — synthesized for mock mode. */
+  async getPlayerPage(playerId) {
+    return buildMockPlayerPage(playerId);
+  }
+
+  /** Stats page (today's matchups, hitting, pitching, HR targets) — mock mode. */
+  async getStatsPage(_date) {
+    return buildMockStatsPage();
   }
 
   /** Statcast leaderboard for visual-analytics charts. */

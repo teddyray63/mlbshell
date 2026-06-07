@@ -509,6 +509,166 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+// ─── Player Page (/players/[playerId]) ──────────────────────────────────────
+
+/** One batter game-log row on the player page (doinksports prop-analysis table). */
+export interface BatterGameLogRow {
+  date: string;
+  opp: string;
+  home: boolean;
+  result?: string;
+  ab: number;
+  h: number;
+  r: number;
+  rbi: number;
+  b1: number;
+  b2: number;
+  b3: number;
+  hr: number;
+  tb: number;
+  bb: number;
+  k: number;
+  sb: number;
+}
+
+/** Opposing-pitcher game-log row shown beside the batter log. */
+export interface OppPitcherLogRow {
+  date: string;
+  opp: string;
+  home: boolean;
+  ip: number;
+  win: boolean;
+  outs: number;
+  h: number;
+  er: number;
+  bb: number;
+  k: number;
+  hr: number;
+}
+
+/** Full payload for the player page. */
+export interface PlayerPage {
+  playerId: string;
+  name: string;
+  team: string;
+  position: string;
+  bats: 'L' | 'R' | 'S';
+  throws: 'L' | 'R';
+  todayOpp?: string;
+  todayTime?: string;
+  todayVenue?: string;
+  lineupConfirmed?: boolean;
+  season: {
+    g?: number;
+    ab?: number;
+    h?: number;
+    hr?: number;
+    rbi?: number;
+    avg?: number;
+    obp?: number;
+    slg?: number;
+    ops?: number;
+    iso?: number;
+    bbPct?: number;
+    kPct?: number;
+    woba?: number;
+    xwoba?: number;
+    exitVelo?: number;
+    barrelPct?: number;
+    hardHitPct?: number;
+  };
+  gameLog: BatterGameLogRow[];
+  opposingPitcher?: {
+    playerId: string;
+    name: string;
+    team: string;
+    throws: 'L' | 'R';
+    gameLog: OppPitcherLogRow[];
+  };
+  batterVsPitcher?: BatterVsPitcher;
+  bestLines?: BestLine[];
+}
+
+// ─── Stats Page (/stats — GameDay Insights) ─────────────────────────────────
+
+/** A "Today's Matchups" row: a hitter vs today's probable pitcher. */
+export interface StatsMatchupRow {
+  playerId: string;
+  time: string;
+  team: string;
+  player: string;
+  vs: string;
+  vsHand: 'L' | 'R';
+  abs: number;
+  siera: number;
+  kPct: number;
+  bbPct: number;
+  avg: number;
+  slg: number;
+  iso: number;
+  hr: number;
+  hr9: number;
+  exitVelo: number;
+  barrelPct: number;
+  hardHitPct: number;
+  gbPct: number;
+  ldPct: number;
+  fbPct: number;
+  pulledAirPct: number;
+}
+
+/** A "Hitting Stats" row (Baseball Savant batter leaderboard). */
+export interface StatsHittingRow {
+  playerId: string;
+  team: string;
+  player: string;
+  abs: number;
+  hits: number;
+  avg: number;
+  woba: number;
+  slg: number;
+  iso: number;
+  xbh: number;
+  hr: number;
+  ballsLaunched: number;
+  hardHitLdFb: number;
+  exitVelo: number;
+  barrelPct: number;
+  hardHitPct: number;
+  gbPct: number;
+  ldPct: number;
+  fbPct: number;
+  pulledAirPct: number;
+}
+
+/** A "Pitching Stats" row. */
+export interface StatsPitchingRow {
+  playerId: string;
+  team: string;
+  player: string;
+  throws: 'L' | 'R';
+  ip: number;
+  era: number;
+  whip: number;
+  kPct: number;
+  bbPct: number;
+  k9: number;
+  hr9: number;
+  siera: number;
+  oba: number;
+  barrelPct: number;
+  hardHitPct: number;
+}
+
+/** Combined stats-page payload. */
+export interface StatsPage {
+  date: string;
+  todaysMatchups: StatsMatchupRow[];
+  hittingStats: StatsHittingRow[];
+  pitchingStats: StatsPitchingRow[];
+  hrTargets: HRTargetPitcher[];
+}
+
 // ─── Saved Edge ───────────────────────────────────────────────────────────────
 
 export interface SavedEdge {

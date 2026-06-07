@@ -1,15 +1,7 @@
-import React from 'react';
-import AppLayout from '@/components/AppLayout';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import AdvancedAnalyticsPage from './components/AdvancedAnalyticsPage';
+import { redirect } from 'next/navigation';
 
-// Advanced Analytics is the entry screen at src/app/page.tsx
+// Root now lands on the Dashboard; legacy Advanced Analytics was consolidated
+// into /stats during the Phase 0 restructure.
 export default function Page() {
-  return (
-    <AppLayout>
-      <ErrorBoundary>
-        <AdvancedAnalyticsPage />
-      </ErrorBoundary>
-    </AppLayout>
-  );
+  redirect('/dashboard');
 }

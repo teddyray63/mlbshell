@@ -5,15 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart2,
-  TrendingUp,
   Zap,
   ChevronLeft,
   ChevronRight,
   Activity,
   CloudRain,
-  FileText,
-  Search,
-  Table,
+  Calendar,
+  Filter,
+  ListChecks,
   Settings,
   Menu,
   X,
@@ -43,18 +42,17 @@ const navItems: NavItem[] = [
     group: 'Overview',
   },
   {
-    id: 'nav-advanced-analytics',
-    label: 'Advanced Analytics',
-    href: '/',
-    icon: <BarChart2 size={18} />,
-    group: 'Analytics',
+    id: 'nav-games',
+    label: 'Games',
+    href: '/games',
+    icon: <Calendar size={18} />,
+    group: 'Games',
   },
   {
-    id: 'nav-betting-intelligence',
-    label: 'Betting Intelligence',
-    href: '/betting-intelligence',
-    icon: <TrendingUp size={18} />,
-    badge: 3,
+    id: 'nav-stats',
+    label: 'Stats',
+    href: '/stats',
+    icon: <BarChart2 size={18} />,
     group: 'Analytics',
   },
   {
@@ -65,31 +63,10 @@ const navItems: NavItem[] = [
     group: 'Analytics',
   },
   {
-    id: 'nav-team-rankings',
-    label: 'Team Rankings',
-    href: '/team-rankings',
-    icon: <Trophy size={18} />,
-    group: 'Analytics',
-  },
-  {
-    id: 'nav-player-props',
-    label: 'Player Props',
-    href: '/player-props',
+    id: 'nav-props',
+    label: 'Props',
+    href: '/props',
     icon: <Activity size={18} />,
-    group: 'Props',
-  },
-  {
-    id: 'nav-prop-analyzer',
-    label: 'Prop Analyzer',
-    href: '/prop-analyzer',
-    icon: <Search size={18} />,
-    group: 'Props',
-  },
-  {
-    id: 'nav-prop-cheatsheet',
-    label: 'Prop Cheatsheet',
-    href: '/prop-cheatsheet',
-    icon: <Table size={18} />,
     group: 'Props',
   },
   {
@@ -100,10 +77,17 @@ const navItems: NavItem[] = [
     group: 'Props',
   },
   {
-    id: 'nav-player-deepdive',
-    label: 'Player Deep Dive',
-    href: '/player-deepdive',
-    icon: <UserSearch size={18} />,
+    id: 'nav-gate-filter',
+    label: 'Gate Filter',
+    href: '/gate-filter',
+    icon: <Filter size={18} />,
+    group: 'Props',
+  },
+  {
+    id: 'nav-daily-workflow',
+    label: 'Daily Workflow',
+    href: '/daily-workflow',
+    icon: <ListChecks size={18} />,
     group: 'Props',
   },
   {
@@ -111,25 +95,32 @@ const navItems: NavItem[] = [
     label: 'Saved Edges',
     href: '/saved-edges',
     icon: <Bookmark size={18} />,
-    group: 'Props',
-  },
-  {
-    id: 'nav-visual-analytics',
-    label: 'Visual Analytics',
-    href: '/visual-analytics',
-    icon: <FileText size={18} />,
-    group: 'Visualization',
+    group: 'Tools',
   },
   {
     id: 'nav-weather-park',
     label: 'Weather & Park',
     href: '/weather-park',
     icon: <CloudRain size={18} />,
-    group: 'Visualization',
+    group: 'Tools',
+  },
+  {
+    id: 'nav-team-rankings',
+    label: 'Team Rankings',
+    href: '/team-rankings',
+    icon: <Trophy size={18} />,
+    group: 'Tools',
+  },
+  {
+    id: 'nav-player-deepdive',
+    label: 'Player Deep Dive',
+    href: '/player-deepdive',
+    icon: <UserSearch size={18} />,
+    group: 'Tools',
   },
 ];
 
-const groups = ['Overview', 'Analytics', 'Props', 'Visualization'];
+const groups = ['Overview', 'Games', 'Analytics', 'Props', 'Tools'];
 
 export default function Sidebar() {
   const pathname = usePathname();

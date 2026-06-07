@@ -363,7 +363,7 @@ export default function PlayerPropsPage() {
                   return (
                     <tr
                       key={p.playerId}
-                      onClick={() => router.push(`/prop-analyzer?player=${p.playerId}`)}
+                      onClick={() => router.push(`/players/${p.playerId}`)}
                       className="cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/20"
                     >
                       <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">

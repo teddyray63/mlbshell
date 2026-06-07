@@ -46,3 +46,6 @@ server/data/
 *.db
 *.db-journal
 *.sqlite
+
+# Vercel
+.vercel/

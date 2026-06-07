@@ -84,6 +84,14 @@ class FetchAdapter {
     return this._get('/api/deep-dive');
   }
 
+  async getPlayerPage(playerId) {
+    return this._get(`/api/players/${encodeURIComponent(playerId)}`);
+  }
+
+  async getStatsPage(date) {
+    return this._get('/api/stats', { date });
+  }
+
   async getPropLines(gameId) {
     return this._get('/api/player-props', { gameId });
   }
