@@ -20,13 +20,17 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
-export function authMiddleware(req: AuthedRequest, res: Response, next: NextFunction): void {
+export async function authMiddleware(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const token = extractToken(req);
   if (!token) {
     res.status(401).json({ data: null, error: 'Authentication required' });
     return;
   }
-  const user = getUserFromToken(token);
+  const user = await getUserFromToken(token);
   if (!user) {
     res.status(401).json({ data: null, error: 'Invalid or expired session' });
     return;

@@ -16,15 +16,15 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', (req: AuthedRequest, res: Response) => {
+router.get('/', async (req: AuthedRequest, res: Response) => {
   try {
-    ok(res, getSavedEdges(req.user!.id));
+    ok(res, await getSavedEdges(req.user!.id));
   } catch (e) {
     fail(res, 500, msg(e));
   }
 });
 
-router.post('/', (req: AuthedRequest, res: Response) => {
+router.post('/', async (req: AuthedRequest, res: Response) => {
   try {
     const body = (req.body ?? {}) as Partial<SavedEdge>;
     if (!body.propId) return fail(res, 400, 'propId is required');
@@ -40,15 +40,15 @@ router.post('/', (req: AuthedRequest, res: Response) => {
       savedAt: body.savedAt || new Date().toISOString(),
       notes: body.notes,
     };
-    ok(res, addSavedEdge(req.user!.id, edge));
+    ok(res, await addSavedEdge(req.user!.id, edge));
   } catch (e) {
     fail(res, 500, msg(e));
   }
 });
 
-router.delete('/:id', (req: AuthedRequest, res: Response) => {
+router.delete('/:id', async (req: AuthedRequest, res: Response) => {
   try {
-    const removed = deleteSavedEdge(req.user!.id, String(req.params.id));
+    const removed = await deleteSavedEdge(req.user!.id, String(req.params.id));
     if (!removed) return fail(res, 404, 'Edge not found');
     ok(res, { success: true });
   } catch (e) {

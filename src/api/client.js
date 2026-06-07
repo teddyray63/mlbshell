@@ -20,12 +20,20 @@ const adapters = {
 
 const SelectedAdapter = adapters?.[mode] || MockAdapter;
 
+// Base URL for the live Express backend (used by the fetch adapter). Prefer
+// NEXT_PUBLIC_API_URL (set in Vercel to the Railway URL); fall back to the
+// legacy var, then to the local dev server.
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:3001';
+
 /**
  * apiClient — singleton instance of the selected adapter.
  * Use this throughout the app for all data fetching.
  */
 const apiClient = new SelectedAdapter({
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+  baseUrl: BASE_URL,
   mlbApiKey: process.env.NEXT_PUBLIC_MLB_API_KEY || '',
   weatherKey: process.env.NEXT_PUBLIC_WEATHER_API_KEY || '',
 });
