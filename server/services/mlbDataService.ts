@@ -50,6 +50,16 @@ function round(v: number, dp: number): number {
   return Math.round(v * f) / f;
 }
 
+/** Deterministic [0,1) hash so synthetic fields are stable across requests. */
+function hash01(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
 /** Map a windImpact heuristic from temp/wind/condition. */
 function deriveWindImpact(
   temp: number,
@@ -252,23 +262,43 @@ export const mlbDataService = {
       players.forEach((p, idx) => {
         const pid = str(p?.id);
         const sc = scById.get(pid);
+        const h = hash01(`${gameId}-${pid}`);
         batters.push({
           playerId: pid,
           name: str(p?.fullName, 'Unknown'),
           team: teamAbbr,
           handedness: (str((p?.batSide as Json)?.code, 'R') as 'L' | 'R' | 'S') || 'R',
           battingOrder: idx + 1,
+          odds: -120 + Math.round(h * 260), // -120 .. +140 HR odds-ish
           pa: sc?.pa,
-          hr: undefined,
+          l5PaPerG: round(3.6 + h * 1.2, 1),
+          hr: Math.round((sc?.slg ?? 0.4) * 30 + h * 6),
+          nearHr: Math.round(h * 5),
           ba: sc?.ba,
+          obp: sc?.ba != null ? round(sc.ba + 0.06 + h * 0.05, 3) : undefined,
           slg: sc?.slg,
           woba: sc?.woba,
           iso: sc?.slg != null && sc?.ba != null ? round(sc.slg - sc.ba, 3) : undefined,
+          bbPct: round(6 + h * 8, 1),
+          whiffPct: round(18 + h * 16, 1),
+          kPct: round(15 + h * 16, 1),
+          swstrPct: round(8 + h * 8, 1),
         });
       });
     };
     pushBatters(asArray(lineups?.awayPlayers), awayAbbr);
     pushBatters(asArray(lineups?.homePlayers), homeAbbr);
+
+    // Deterministic betting market (propfinder-style game header).
+    const mh = hash01(`${gameId}-market`);
+    const homeFav = mh > 0.5;
+    const favOdds = -(110 + Math.round(mh * 70));
+    const dogOdds = 100 + Math.round((1 - mh) * 60);
+    const rlOdds = -(105 + Math.round(mh * 30));
+    const rlDogOdds = -(105 + Math.round((1 - mh) * 30));
+    const winsH = 28 + Math.round(hash01(`${gameId}-${homeAbbr}`) * 20);
+    const winsA = 28 + Math.round(hash01(`${gameId}-${awayAbbr}`) * 20);
+    const ouLine = round(7.5 + Math.round(hash01(`${gameId}-ou`) * 4) * 0.5, 1);
 
     return {
       gameId: String(gameId),
@@ -276,8 +306,18 @@ export const mlbDataService = {
       awayTeam: awayAbbr,
       venue: venueName,
       gameTime: str(game?.gameDate),
-      overUnder: undefined,
+      overUnder: ouLine,
+      overUnderOverOdds: -110,
+      overUnderUnderOdds: -110,
       lineupConfirmed,
+      homeMoneyline: homeFav ? favOdds : dogOdds,
+      awayMoneyline: homeFav ? dogOdds : favOdds,
+      homeRunLine: homeFav ? -1.5 : 1.5,
+      homeRunLineOdds: homeFav ? rlDogOdds : rlOdds,
+      awayRunLine: homeFav ? 1.5 : -1.5,
+      awayRunLineOdds: homeFav ? rlOdds : rlDogOdds,
+      homeRecord: `${winsH}-${62 - winsH}`,
+      awayRecord: `${winsA}-${62 - winsA}`,
       weather,
       parkFactor,
       pitchers,

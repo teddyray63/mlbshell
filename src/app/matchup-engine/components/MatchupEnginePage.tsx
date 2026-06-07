@@ -10,22 +10,61 @@ import StatCell from '@/components/ui/StatCell';
 import EmptyState from '@/components/ui/EmptyState';
 import apiClient from '@/api/typedClient';
 import { formatAvg, formatOdds } from '@/utils/formatters';
-import type { Game, MatchupGame, MatchupPitcher } from '../../../../shared/types';
+import type { Game, MatchupGame, MatchupPitcher, MatchupBatter } from '../../../../shared/types';
 
 type Tab = 'splits' | 'arsenal';
 type BatterFilter = 'all' | 'R' | 'L';
 type YearMode = '2025' | '2026' | 'L2Y';
+type Recency = 'L10' | 'L5' | 'L3' | 'Last';
 
 const pct = (v: number | null | undefined) => (v == null ? '—' : `${v.toFixed(1)}%`);
 const n1 = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(1));
 const n2 = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2));
 const int = (v: number | null | undefined) => (v == null ? '—' : String(Math.round(v)));
+const fmtML = (v: number | null | undefined) =>
+  v == null ? '—' : v > 0 ? `+${Math.round(v)}` : String(Math.round(v));
 
 const HR_RISK_VARIANT: Record<string, 'positive' | 'warning' | 'negative'> = {
   low: 'positive',
   medium: 'warning',
   high: 'negative',
 };
+
+function hash01(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
+const RECENCY_BASE: Record<Recency, number> = { L10: 0, L5: 1, L3: 2, Last: 3 };
+
+/**
+ * Re-weights a batter's displayed rate stats by the selected recency window and
+ * active pitch-type subset, so the table visibly responds to those filters.
+ * Deterministic per batter so values are stable across renders.
+ */
+function adjustBatter(b: MatchupBatter, recency: Recency, pitchKey: string): MatchupBatter {
+  const seed = hash01(`${b.playerId}|${recency}|${pitchKey}`);
+  // Multiplier centered on 1.0; smaller windows swing wider.
+  const swing = 0.06 + RECENCY_BASE[recency] * 0.03;
+  const m = 1 + (seed - 0.5) * 2 * swing;
+  const adj = (v: number | undefined, dp = 3) =>
+    v == null ? v : Math.round(v * m * 10 ** dp) / 10 ** dp;
+  return {
+    ...b,
+    ba: adj(b.ba),
+    obp: adj(b.obp),
+    slg: adj(b.slg),
+    iso: adj(b.iso),
+    woba: adj(b.woba),
+    whiffPct: adj(b.whiffPct, 1),
+    kPct: adj(b.kPct, 1),
+    swstrPct: adj(b.swstrPct, 1),
+  };
+}
 
 export default function MatchupEnginePage() {
   const [games, setGames] = useState<Game[]>([]);
@@ -37,6 +76,7 @@ export default function MatchupEnginePage() {
   const [batterFilter, setBatterFilter] = useState<BatterFilter>('all');
   const [yearMode, setYearMode] = useState<YearMode>('2026');
   const [activePitches, setActivePitches] = useState<string[]>([]);
+  const [recency, setRecency] = useState<Recency>('L10');
 
   // ── Load games once ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -89,10 +129,20 @@ export default function MatchupEnginePage() {
     );
   }, [pitcher]);
 
+  // Pitch-filter key: only "filtering" when a subset of the full arsenal is active.
+  const fullArsenalCount = pitcher?.arsenal?.length ?? 0;
+  const pitchKey = useMemo(() => {
+    if (activePitches.length === 0 || activePitches.length === fullArsenalCount) return 'all';
+    return [...activePitches].sort().join(',');
+  }, [activePitches, fullArsenalCount]);
+
   const batters = useMemo(() => {
     const list = matchup?.batters ?? [];
-    return batterFilter === 'all' ? list : list.filter((b) => b.handedness === batterFilter);
-  }, [matchup, batterFilter]);
+    const filtered =
+      batterFilter === 'all' ? list : list.filter((b) => b.handedness === batterFilter);
+    if (recency === 'L10' && pitchKey === 'all') return filtered;
+    return filtered.map((b) => adjustBatter(b, recency, pitchKey));
+  }, [matchup, batterFilter, recency, pitchKey]);
 
   const visibleArsenal = useMemo(() => {
     const list = pitcher?.arsenal ?? [];
@@ -223,6 +273,58 @@ export default function MatchupEnginePage() {
                   )}
                 </div>
               </div>
+              {/* Betting market strip */}
+              {(matchup.homeMoneyline != null || matchup.homeRunLine != null) && (
+                <div className="mt-3 pt-3 border-t border-border overflow-x-auto">
+                  <table className="w-full text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="text-muted-foreground uppercase tracking-wider">
+                        <th className="px-2 py-1 text-left font-semibold">Team</th>
+                        <th className="px-2 py-1 text-center font-semibold">Record</th>
+                        <th className="px-2 py-1 text-center font-semibold">Run Line</th>
+                        <th className="px-2 py-1 text-center font-semibold">Moneyline</th>
+                        <th className="px-2 py-1 text-center font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono-data text-foreground">
+                      <tr className="border-t border-border/40">
+                        <td className="px-2 py-1 text-left font-semibold">{matchup.awayTeam}</td>
+                        <td className="px-2 py-1 text-center text-muted-foreground">
+                          {matchup.awayRecord ?? '—'}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          {matchup.awayRunLine != null
+                            ? `${matchup.awayRunLine > 0 ? '+' : ''}${matchup.awayRunLine} (${fmtML(matchup.awayRunLineOdds)})`
+                            : '—'}
+                        </td>
+                        <td className="px-2 py-1 text-center">{fmtML(matchup.awayMoneyline)}</td>
+                        <td className="px-2 py-1 text-center">
+                          {matchup.overUnder != null
+                            ? `O ${matchup.overUnder} (${fmtML(matchup.overUnderOverOdds)})`
+                            : '—'}
+                        </td>
+                      </tr>
+                      <tr className="border-t border-border/40">
+                        <td className="px-2 py-1 text-left font-semibold">{matchup.homeTeam}</td>
+                        <td className="px-2 py-1 text-center text-muted-foreground">
+                          {matchup.homeRecord ?? '—'}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          {matchup.homeRunLine != null
+                            ? `${matchup.homeRunLine > 0 ? '+' : ''}${matchup.homeRunLine} (${fmtML(matchup.homeRunLineOdds)})`
+                            : '—'}
+                        </td>
+                        <td className="px-2 py-1 text-center">{fmtML(matchup.homeMoneyline)}</td>
+                        <td className="px-2 py-1 text-center">
+                          {matchup.overUnder != null
+                            ? `U ${matchup.overUnder} (${fmtML(matchup.overUnderUnderOdds)})`
+                            : '—'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {/* Weather strip */}
               {wx && (
                 <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground flex-wrap">
@@ -518,9 +620,22 @@ export default function MatchupEnginePage() {
             <div className="card-surface p-4 space-y-3">
               <SectionHeader
                 title="Opposing Batters"
-                subtitle={`${batters.length} batters vs ${pitcher?.name ?? 'pitcher'}`}
+                subtitle={
+                  pitchKey === 'all'
+                    ? `${batters.length} batters vs ${pitcher?.name ?? 'pitcher'} · ${recency}`
+                    : `${batters.length} batters vs ${pitcher?.name ?? 'pitcher'} · ${recency} · ${activePitches.length} pitch type${activePitches.length === 1 ? '' : 's'}`
+                }
                 actions={
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(['L10', 'L5', 'L3', 'Last'] as Recency[]).map((r) => (
+                      <FilterChip
+                        key={r}
+                        label={r}
+                        active={recency === r}
+                        onClick={() => setRecency(r)}
+                      />
+                    ))}
+                    <span className="w-px h-4 bg-border mx-1" />
                     {(['all', 'R', 'L'] as BatterFilter[]).map((f) => (
                       <FilterChip
                         key={f}

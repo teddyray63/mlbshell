@@ -35,6 +35,12 @@ const BATTER: Record<string, Threshold> = {
   swstrpct: { good: 10, ok: 14, dir: 'low' },
   bbpct: { good: 10, ok: 7, dir: 'high' },
   obp: { good: 0.35, ok: 0.31, dir: 'high' },
+  // HR-target oriented (green = juicier target for the hitter)
+  hr9: { good: 1.4, ok: 1.0, dir: 'high' },
+  absperhr: { good: 12, ok: 18, dir: 'low' },
+  hrfbpct: { good: 14, ok: 11, dir: 'high' },
+  flyballpct: { good: 40, ok: 33, dir: 'high' },
+  pulledairpct: { good: 40, ok: 32, dir: 'high' },
 };
 
 const PITCHER: Record<string, Threshold> = {
@@ -51,6 +57,9 @@ const PITCHER: Record<string, Threshold> = {
   putawaypct: { good: 22, ok: 17, dir: 'high' },
   whip: { good: 1.1, ok: 1.3, dir: 'low' },
   k9: { good: 9.5, ok: 7.5, dir: 'high' },
+  era: { good: 3.2, ok: 4.2, dir: 'low' },
+  oba: { good: 0.22, ok: 0.26, dir: 'low' },
+  brlpct: { good: 6, ok: 9, dir: 'low' },
 };
 
 /**

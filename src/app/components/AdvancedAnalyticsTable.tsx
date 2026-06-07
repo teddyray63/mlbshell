@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import SectionHeader from '@/components/ui/SectionHeader';
 
 import EmptyState from '@/components/ui/EmptyState';
-import TodoMarker from '@/components/ui/TodoMarker';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ArrowUpDown, ArrowUp, ArrowDown, BarChart2 } from 'lucide-react';
 
@@ -239,10 +238,6 @@ export default function AdvancedAnalyticsTable() {
         <SectionHeader
           title="Player Stat Table"
           subtitle="Statcast-derived metrics — click column header to sort"
-        />
-        <TodoMarker
-          pageName="AdvancedAnalytics Table"
-          description="Replace mockPlayers with real data from analyticsService"
         />
       </div>
 

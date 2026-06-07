@@ -2,7 +2,6 @@ import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Topbar from '@/components/Topbar';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 export default function SettingsPage() {
   return (
@@ -11,11 +10,6 @@ export default function SettingsPage() {
         <div className="flex flex-col min-h-screen">
           <Topbar title="Settings" subtitle="API configuration and environment options" />
           <div className="flex-1 px-6 py-5 max-w-screen-2xl mx-auto w-full space-y-5">
-            <TodoMarker
-              pageName="Settings"
-              description="Add app-level settings here — API mode toggle, API key inputs, display preferences."
-            />
-
             <div className="card-surface p-5 space-y-4">
               <h2 className="text-sm font-semibold text-foreground">API Configuration</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

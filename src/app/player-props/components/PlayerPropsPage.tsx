@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUp, ArrowDown, ArrowUpDown, Activity } from 'lucide-react';
 import Topbar from '@/components/Topbar';
@@ -9,6 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import FilterChip from '@/components/ui/FilterChip';
 import EmptyState from '@/components/ui/EmptyState';
 import StatCell from '@/components/ui/StatCell';
+import SaveEdgeButton from '@/components/ui/SaveEdgeButton';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
@@ -30,7 +31,11 @@ type SortKey =
   | 'xwoba'
   | 'edgeVsRHP'
   | 'edgeVsLHP'
-  | 'whiffPct';
+  | 'whiffPct'
+  | 'l5PaPerG'
+  | 'nearHr'
+  | 'hrFbPct'
+  | 'pulledAirPct';
 type SortDir = 'asc' | 'desc';
 
 const PITCH_CHIPS = ['4-Seam Fastball', 'Slider', 'Curveball', 'Changeup', 'Sinker'];
@@ -59,6 +64,10 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' | 'right'
   { key: 'edgeVsRHP', label: 'vs RHP', align: 'right' },
   { key: 'edgeVsLHP', label: 'vs LHP', align: 'right' },
   { key: 'whiffPct', label: 'Whiff%', align: 'right' },
+  { key: 'l5PaPerG', label: 'L5 PA/G', align: 'right' },
+  { key: 'nearHr', label: 'Near HR', align: 'right' },
+  { key: 'hrFbPct', label: 'HR/FB%', align: 'right' },
+  { key: 'pulledAirPct', label: 'Pulled-Air%', align: 'right' },
 ];
 
 export default function PlayerPropsPage() {
@@ -74,6 +83,22 @@ export default function PlayerPropsPage() {
   const [pitches, setPitches] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>('edge');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .getSavedEdges()
+      .then((edges) => {
+        if (active) setSavedIds(new Set(edges.map((e) => e.propId)));
+      })
+      .catch(() => {
+        /* not logged in / no edges */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const togglePitch = (p: string) =>
     setPitches((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
@@ -176,6 +201,22 @@ export default function PlayerPropsPage() {
         case 'whiffPct':
           av = a.whiffPct ?? 0;
           bv = b.whiffPct ?? 0;
+          break;
+        case 'l5PaPerG':
+          av = a.l5PaPerG ?? 0;
+          bv = b.l5PaPerG ?? 0;
+          break;
+        case 'nearHr':
+          av = a.nearHr ?? 0;
+          bv = b.nearHr ?? 0;
+          break;
+        case 'hrFbPct':
+          av = a.hrFbPct ?? 0;
+          bv = b.hrFbPct ?? 0;
+          break;
+        case 'pulledAirPct':
+          av = a.pulledAirPct ?? 0;
+          bv = b.pulledAirPct ?? 0;
           break;
       }
       if (typeof av === 'string' && typeof bv === 'string') {
@@ -289,16 +330,19 @@ export default function PlayerPropsPage() {
                 <th className="px-3 py-2 text-center font-semibold uppercase tracking-wider text-muted-foreground">
                   Conf
                 </th>
+                <th className="px-3 py-2 text-center font-semibold uppercase tracking-wider text-muted-foreground">
+                  Save
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <TableRowSkeleton key={`skel-${i}`} cols={COLUMNS.length + 1} />
+                  <TableRowSkeleton key={`skel-${i}`} cols={COLUMNS.length + 2} />
                 ))
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={COLUMNS.length + 1}>
+                  <td colSpan={COLUMNS.length + 2}>
                     <EmptyState
                       icon={<Activity size={28} />}
                       title="No props match these filters"
@@ -340,7 +384,20 @@ export default function PlayerPropsPage() {
                         {formatEV(p.edge)}
                       </td>
                       <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
-                        {p.hitRate != null ? `${Math.round(p.hitRate * 100)}%` : '—'}
+                        {p.hitRateHits != null && p.hitRateGames ? (
+                          <span>
+                            <span className="text-foreground">
+                              {p.hitRateHits}/{p.hitRateGames}
+                            </span>{' '}
+                            <span className="text-[10px]">
+                              {Math.round((p.hitRateHits / p.hitRateGames) * 100)}%
+                            </span>
+                          </span>
+                        ) : p.hitRate != null ? (
+                          `${Math.round(p.hitRate * 100)}%`
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
                         {p.ev != null ? p.ev.toFixed(2) : '—'}
@@ -380,8 +437,35 @@ export default function PlayerPropsPage() {
                         type="batter"
                         format={(v) => (v == null ? '—' : `${v.toFixed(1)}%`)}
                       />
+                      <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
+                        {p.l5PaPerG != null ? p.l5PaPerG.toFixed(1) : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono-data text-foreground">
+                        {p.nearHr ?? '—'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
+                        {p.hrFbPct != null ? `${p.hrFbPct.toFixed(1)}%` : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
+                        {p.pulledAirPct != null ? `${p.pulledAirPct.toFixed(1)}%` : '—'}
+                      </td>
                       <td className="px-3 py-2 text-center">
                         <StatusBadge variant={conf.variant}>{conf.label}</StatusBadge>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <SaveEdgeButton
+                          edge={{
+                            propId: `${p.playerId}:${p.statType}`,
+                            player: p.player ?? '',
+                            prop: p.statType,
+                            line: p.line ?? 0,
+                            direction: p.direction ?? 'over',
+                            edge: p.edge,
+                            confidence: p.confidence,
+                          }}
+                          initiallySaved={savedIds.has(`${p.playerId}:${p.statType}`)}
+                          onSaved={(id) => setSavedIds((s) => new Set(s).add(id))}
+                        />
                       </td>
                     </tr>
                   );

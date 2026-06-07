@@ -7,7 +7,16 @@ interface TopbarProps {
   actions?: React.ReactNode;
 }
 
+const API_MODE = process.env.NEXT_PUBLIC_API_MODE || 'mock';
+const IS_LIVE = API_MODE === 'fetch';
+
 export default function Topbar({ title, subtitle, actions }: TopbarProps) {
+  const today = new Date().toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: '2-digit',
+  });
+
   return (
     <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-card/80 backdrop-blur-sm border-b border-border">
       <div>
@@ -16,17 +25,20 @@ export default function Topbar({ title, subtitle, actions }: TopbarProps) {
       </div>
       <div className="flex items-center gap-4">
         {actions}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Database size={12} className="text-primary" />
-          <span className="font-mono-data">mock</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Wifi size={12} className="text-positive" />
-          <span>live</span>
-        </div>
+        {IS_LIVE ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Wifi size={12} className="text-positive" />
+            <span>live</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Database size={12} className="text-primary" />
+            <span className="font-mono-data">mock</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono-data">
           <Clock size={12} />
-          <span>06/01/26</span>
+          <span>{today}</span>
         </div>
       </div>
     </div>

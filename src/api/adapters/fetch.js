@@ -72,6 +72,18 @@ class FetchAdapter {
     return this._get('/api/matchup/leaderboard/statcast', { stat });
   }
 
+  async getHRTargets(options = {}) {
+    return this._get('/api/hr-targets', options);
+  }
+
+  async getDeepDive(playerId) {
+    return this._get(`/api/deep-dive/${encodeURIComponent(playerId)}`);
+  }
+
+  async getDeepDiveList() {
+    return this._get('/api/deep-dive');
+  }
+
   async getPropLines(gameId) {
     return this._get('/api/player-props', { gameId });
   }

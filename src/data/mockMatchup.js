@@ -248,6 +248,16 @@ export function buildMockMatchup(gameId) {
     b.battingOrder = (i % 9) + 1;
   });
 
+  // Deterministic betting market (propfinder-style game header).
+  const mh = hash(`${game.id}-market`);
+  const homeFav = mh > 0.5;
+  const favOdds = -(110 + Math.round(mh * 70)); // -110 .. -180
+  const dogOdds = +(100 + Math.round((1 - mh) * 60)); // +100 .. +160
+  const rlOdds = -(105 + Math.round(mh * 30));
+  const rlDogOdds = -(105 + Math.round((1 - mh) * 30));
+  const winsH = 28 + Math.round(hash(`${game.id}-${game.homeTeam}`) * 20);
+  const winsA = 28 + Math.round(hash(`${game.id}-${game.awayTeam}`) * 20);
+
   return {
     gameId: game.id,
     homeTeam: game.homeTeam,
@@ -255,7 +265,17 @@ export function buildMockMatchup(gameId) {
     venue: game.venue,
     gameTime: game.gameTime,
     overUnder: game.overUnder,
+    overUnderOverOdds: -110,
+    overUnderUnderOdds: -110,
     lineupConfirmed: game.status === 'scheduled' || game.status === 'live',
+    homeMoneyline: homeFav ? favOdds : dogOdds,
+    awayMoneyline: homeFav ? dogOdds : favOdds,
+    homeRunLine: homeFav ? -1.5 : 1.5,
+    homeRunLineOdds: homeFav ? rlDogOdds : rlOdds,
+    awayRunLine: homeFav ? 1.5 : -1.5,
+    awayRunLineOdds: homeFav ? rlOdds : rlDogOdds,
+    homeRecord: `${winsH}-${62 - winsH}`,
+    awayRecord: `${winsA}-${62 - winsA}`,
     weather: wx,
     parkFactor: parkFactor(game.venue),
     pitchers,
@@ -264,3 +284,230 @@ export function buildMockMatchup(gameId) {
 }
 
 buildMockMatchup.parkFactor = parkFactor;
+
+// ─── HR Targets (gameday-insights Homerun Targets) ───────────────────────────
+
+/** All probable pitchers across the seed slate, as HR-target rows. */
+export function buildMockHRTargets() {
+  const rows = [];
+  for (const game of mockGameList) {
+    const sp = SEED_PITCHERS[game.id];
+    if (!sp) continue;
+    for (const [side, opp] of [
+      ['home', game.awayTeam],
+      ['away', game.homeTeam],
+    ]) {
+      const [seedId, name, team, throws] = sp[side];
+      const id = seedId || `${team}-sp`;
+      const b = hash(id + 'hrt');
+      const abs = Math.round(120 + b * 180);
+      const hr = Math.round(8 + b * 22);
+      const hr9 = round(0.7 + b * 1.4, 2);
+      rows.push({
+        playerId: mockPlayerEnrichment[seedId]?.mlbId || id,
+        name,
+        team,
+        opp,
+        gameTime: game.gameTime,
+        throws,
+        abs,
+        hr,
+        absPerHr: round(abs / Math.max(1, hr), 1),
+        hr9,
+        barrelPct: round(6 + b * 8, 1),
+        hardHitPct: round(34 + b * 14, 1),
+        hrFbPct: round(10 + b * 15, 1),
+        flyBallPct: round(28 + b * 14, 1),
+        pulledAirPct: round(30 + b * 20, 1),
+      });
+    }
+  }
+  return rows.sort((a, b) => b.hr9 - a.hr9);
+}
+
+// ─── Player Deep Dive (moonshots player page) ────────────────────────────────
+
+const DEEP_DIVE_OPPS = ['NYM', 'PHI', 'SD', 'COL', 'MIA', 'WSH', 'STL', 'CIN', 'ARI', 'PIT'];
+
+/** A pitcher deep-dive payload (season stats + advanced splits + game log). */
+export function buildMockDeepDive(playerId) {
+  // Resolve against the probable-pitcher universe.
+  const universe = [];
+  for (const game of mockGameList) {
+    const sp = SEED_PITCHERS[game.id];
+    if (!sp) continue;
+    for (const side of ['home', 'away']) {
+      const [seedId, name, team, throws] = sp[side];
+      const id = String(mockPlayerEnrichment[seedId]?.mlbId || seedId || `${team}-sp`);
+      universe.push({ id, name, team, throws, seedId });
+    }
+  }
+  const pick =
+    universe.find((p) => p.id === String(playerId)) ||
+    universe.find((p) => p.name === playerId) ||
+    universe[0];
+  if (!pick) return null;
+
+  const b = hash(pick.id + 'dd');
+  const ip = round(120 + b * 80, 1);
+  const k9 = round(8.5 + b * 3, 1);
+  const bb9 = round(2.2 + b * 1.8, 1);
+  const hr9 = round(0.8 + b * 0.9, 2);
+  const h9 = round(6.8 + b * 2.2, 1);
+  const era = round(2.9 + b * 1.8, 2);
+  const g = Math.round(20 + b * 12);
+  const k = Math.round((k9 * ip) / 9);
+  const bb = Math.round((bb9 * ip) / 9);
+  const hr = Math.round((hr9 * ip) / 9);
+  const h = Math.round((h9 * ip) / 9);
+  const er = Math.round((era * ip) / 9);
+  const w = Math.round(8 + b * 8);
+
+  const season = [
+    {
+      season: '2026',
+      g,
+      gs: g,
+      w,
+      l: Math.max(2, Math.round(g * 0.35 - w * 0.3)),
+      ip,
+      r: er + Math.round(b * 6),
+      er,
+      h,
+      k,
+      bb,
+      hr,
+      era,
+      h9,
+      k9,
+      bb9,
+      hr9,
+    },
+    {
+      season: '2025',
+      g: g + 4,
+      gs: g + 4,
+      w: w + 2,
+      l: Math.max(3, Math.round(g * 0.35)),
+      ip: round(ip + 30, 1),
+      r: er + 12,
+      er: er + 8,
+      h: h + 20,
+      k: k + 28,
+      bb: bb + 6,
+      hr: hr + 4,
+      era: round(era - 0.2, 2),
+      h9: round(h9 - 0.1, 1),
+      k9: round(k9 + 0.3, 1),
+      bb9: round(bb9 - 0.1, 1),
+      hr9: round(hr9 - 0.05, 2),
+    },
+  ];
+
+  const splitDefs = [
+    { split: 'vs L', f: 1.06 },
+    { split: 'vs R', f: 0.95 },
+    { split: 'Total', f: 1.0 },
+    { split: '% Rank', f: 1.0, rank: true },
+  ];
+  const advancedSplits = splitDefs.map(({ split, f, rank }) =>
+    rank
+      ? {
+          split,
+          kPct: Math.round(60 + b * 35),
+          bbPct: Math.round(55 + b * 35),
+          woba: Math.round(62 + b * 30),
+          xwoba: Math.round(60 + b * 32),
+          iso: Math.round(58 + b * 30),
+          barPerPa: Math.round(64 + b * 28),
+          barPerBbe: Math.round(63 + b * 28),
+          babip: Math.round(50 + b * 30),
+          gbPct: Math.round(52 + b * 30),
+          ldPct: Math.round(48 + b * 30),
+          fbPct: Math.round(45 + b * 30),
+          puPct: Math.round(55 + b * 30),
+          hard95Pct: Math.round(58 + b * 30),
+          aev: Math.round(57 + b * 30),
+          ala: Math.round(50 + b * 30),
+          hrFb: Math.round(56 + b * 30),
+        }
+      : {
+          split,
+          ip: round((ip / 2) * f, 1),
+          kPct: round(24 * f, 1),
+          bbPct: round(7.5 * (2 - f), 1),
+          woba: round(0.295 * f, 3),
+          xwoba: round(0.3 * f, 3),
+          iso: round(0.15 * f, 3),
+          barPerPa: round(5.5 * f, 1),
+          barPerBbe: round(8 * f, 1),
+          babip: round(0.29 * f, 3),
+          gbPct: round(44 * (2 - f), 1),
+          ldPct: round(21 * f, 1),
+          fbPct: round(35 * f, 1),
+          puPct: round(9 * f, 1),
+          hard95Pct: round(36 * f, 1),
+          aev: round(88 * f, 1),
+          ala: round(13 * f, 1),
+          hrFb: round(12 * f, 1),
+        }
+  );
+
+  const gameLog = Array.from({ length: 10 }).map((_, i) => {
+    const gb = hash(`${pick.id}-glog-${i}`);
+    const gIp = round(4 + gb * 3, 1);
+    const gK = Math.round(gIp * (k9 / 9) + gb * 2);
+    const gER = Math.round(gb * 4);
+    const d = new Date();
+    d.setDate(d.getDate() - (i + 1) * 5);
+    return {
+      date: d.toISOString().slice(0, 10),
+      opp: DEEP_DIVE_OPPS[i % DEEP_DIVE_OPPS.length],
+      home: i % 2 === 0,
+      started: true,
+      dkPts: round(10 + gb * 22, 1),
+      pitchCount: Math.round(75 + gb * 30),
+      ip: gIp,
+      r: gER + Math.round(gb * 2),
+      er: gER,
+      h: Math.round(gIp * (h9 / 9) + gb * 2),
+      bb: Math.round(gb * 4),
+      k: gK,
+      hr: Math.round(gb * 2),
+      velo: round(93 + gb * 4, 1),
+      swstrPct: round(10 + gb * 8, 1),
+      whiffPct: round(22 + gb * 12, 1),
+      woba: round(0.26 + gb * 0.1, 3),
+      xwoba: round(0.27 + gb * 0.1, 3),
+      iso: round(0.12 + gb * 0.08, 3),
+    };
+  });
+
+  return {
+    playerId: pick.id,
+    name: pick.name,
+    team: pick.team,
+    throws: pick.throws,
+    season,
+    advancedSplits,
+    gameLog,
+  };
+}
+
+/** List of selectable deep-dive pitchers (for the search/selector). */
+export function buildMockDeepDiveList() {
+  const seen = new Set();
+  const out = [];
+  for (const game of mockGameList) {
+    const sp = SEED_PITCHERS[game.id];
+    if (!sp) continue;
+    for (const side of ['home', 'away']) {
+      const [seedId, name, team, throws] = sp[side];
+      const id = String(mockPlayerEnrichment[seedId]?.mlbId || seedId || `${team}-sp`);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push({ id, name, team, throws });
+    }
+  }
+  return out;
+}

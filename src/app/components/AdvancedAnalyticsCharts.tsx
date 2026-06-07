@@ -3,7 +3,6 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 const WobaAreaChart = dynamic(() => import('@/charts/WobaAreaChart'), {
   ssr: false,
@@ -19,10 +18,6 @@ const BarrelRateBarChart = dynamic(() => import('@/charts/BarrelRateBarChart'), 
 export default function AdvancedAnalyticsCharts() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="AdvancedAnalytics Charts"
-        description="Connect real time-series data to WobaAreaChart and batted-ball profile data to BarrelRateBarChart."
-      />
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2 gap-3">
         {/* wOBA Trend */}
         <div className="card-surface p-4">

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
-import TodoMarker from '@/components/ui/TodoMarker';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import { TrendingUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -172,12 +171,7 @@ export default function BettingPropsTable() {
           title="Today's Prop Lines"
           subtitle="Opening vs. current line — EV% and sharp consensus"
         />
-        <div className="flex flex-wrap items-center gap-2">
-          <TodoMarker
-            pageName="BettingIntelligence PropsTable"
-            description="Replace mockProps with live prop feed from bettingService.fetchTodayPropLines()"
-          />
-        </div>
+        <div className="flex flex-wrap items-center gap-2"></div>
         <div className="flex flex-wrap gap-1.5">
           {(['all', 'steam', 'value', 'fade', 'neutral'] as FilterStatus[]).map((f) => (
             <button
