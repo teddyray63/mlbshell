@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 const LineMovementChart = dynamic(() => import('@/charts/LineMovementChart'), {
   ssr: false,
@@ -25,10 +24,6 @@ const featuredGame = {
 export default function BettingLineMovement() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="BettingIntelligence LineMovement"
-        description="Pass real game ID to bettingService.fetchBettingLines() and feed result into LineMovementChart."
-      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Chart — spans 2 cols */}
         <div className="card-surface p-4 lg:col-span-2">
