@@ -57,6 +57,147 @@ export interface PlayerProp {
   edge?: number;
   hitRate?: number;
   sampleSize?: number;
+  // Statcast enrichment (Baseball Savant)
+  handedness?: 'L' | 'R' | 'S';
+  exitVelo?: number;
+  barrelPct?: number;
+  hardHitPct?: number;
+  xwoba?: number;
+  whiffPct?: number;
+  edgeVsRHP?: number;
+  edgeVsLHP?: number;
+  parkFactor?: number;
+}
+
+// ─── Statcast ─────────────────────────────────────────────────────────────────
+
+/** Batter Statcast metrics (Baseball Savant leaderboards). */
+export interface BatterStatcast {
+  playerId: string;
+  name?: string;
+  year: number;
+  pa?: number;
+  ba?: number;
+  slg?: number;
+  woba?: number;
+  xwoba?: number;
+  xba?: number;
+  xslg?: number;
+  exitVelo?: number;
+  barrelPct?: number;
+  hardHitPct?: number;
+  launchAngle?: number;
+  kPct?: number;
+  bbPct?: number;
+}
+
+/** Pitcher Statcast / season metrics. */
+export interface PitcherStatcast {
+  playerId: string;
+  name?: string;
+  year: number;
+  ip?: number;
+  bf?: number;
+  baa?: number;
+  woba?: number;
+  slg?: number;
+  iso?: number;
+  whip?: number;
+  hr?: number;
+  hr9?: number;
+  bbPct?: number;
+  whiffPct?: number;
+  kPct?: number;
+  putawayPct?: number;
+  swstrPct?: number;
+  k9?: number;
+  firstPitchStrikePct?: number;
+}
+
+/** A single split row (Season / vsLHB / vsRHB) for a pitcher table. */
+export interface PitcherSplit extends PitcherStatcast {
+  split: 'Season' | 'vsLHB' | 'vsRHB';
+}
+
+/** One pitch type in a pitcher's arsenal. */
+export interface PitchArsenalEntry {
+  pitchType: string;
+  pitchName: string;
+  count?: number;
+  usagePct?: number;
+  bbe?: number;
+  ba?: number;
+  woba?: number;
+  slg?: number;
+  iso?: number;
+  hr?: number;
+  bbPct?: number;
+  whiffPct?: number;
+  kPct?: number;
+  putawayPct?: number;
+  swstrPct?: number;
+  velo?: number;
+  exitVelo?: number;
+  launchAngle?: number;
+  hardHitPct?: number;
+}
+
+/** Park factor rating for a venue. */
+export interface ParkFactor {
+  venue: string;
+  parkFactor: number;
+  hrFactor: number;
+  runsFactor: number;
+  hrRateL3: number[];
+}
+
+/** A batter row in the matchup engine table. */
+export interface MatchupBatter {
+  playerId: string;
+  name: string;
+  team: string;
+  handedness: 'L' | 'R' | 'S';
+  battingOrder?: number;
+  odds?: number;
+  pa?: number;
+  l5PaPerG?: number;
+  hr?: number;
+  nearHr?: number;
+  ba?: number;
+  obp?: number;
+  slg?: number;
+  iso?: number;
+  woba?: number;
+  bbPct?: number;
+  whiffPct?: number;
+  kPct?: number;
+  swstrPct?: number;
+}
+
+/** Full matchup payload for a single game. */
+export interface MatchupGame {
+  gameId: string;
+  homeTeam: string;
+  awayTeam: string;
+  venue: string;
+  gameTime: string;
+  overUnder?: number;
+  lineupConfirmed: boolean;
+  weather: WeatherCondition | null;
+  parkFactor: ParkFactor | null;
+  pitchers: MatchupPitcher[];
+  batters: MatchupBatter[];
+}
+
+export interface MatchupPitcher {
+  playerId: string;
+  name: string;
+  team: string;
+  throws: 'L' | 'R';
+  hrRiskVsLHB?: 'high' | 'medium' | 'low';
+  hrRiskVsRHB?: 'high' | 'medium' | 'low';
+  splits: PitcherSplit[];
+  arsenal: PitchArsenalEntry[];
 }
 
 // ─── Weather ──────────────────────────────────────────────────────────────────
@@ -132,6 +273,44 @@ export interface PropCalculation {
   overOdds?: number;
   underOdds?: number;
   gameLog?: GameLogEntry[];
+  // Statcast enrichment + per-split breakdown (Prop Analyzer deep-dive)
+  handedness?: 'L' | 'R' | 'S';
+  position?: string;
+  statcast?: BatterStatcast;
+  splitRows?: BatterSplitRow[];
+  pitchVulnerability?: PitchVulnerability[];
+  // Flat Statcast fields (player-props table columns, set by enrichCalculation)
+  exitVelo?: number;
+  barrelPct?: number;
+  hardHitPct?: number;
+  xwoba?: number;
+  whiffPct?: number;
+  edgeVsRHP?: number;
+  edgeVsLHP?: number;
+  parkFactor?: number;
+}
+
+/** One row in the Prop Analyzer stat breakdown table (Season / Last N / vs pitcher). */
+export interface BatterSplitRow {
+  split: string;
+  avg?: number;
+  woba?: number;
+  xwoba?: number;
+  slg?: number;
+  exitVelo?: number;
+  barrelPct?: number;
+  hardHitPct?: number;
+  launchAngle?: number;
+  kPct?: number;
+  bbPct?: number;
+}
+
+/** How a batter fares against a given pitch type. */
+export interface PitchVulnerability {
+  pitchType: string;
+  whiffPct: number;
+  woba: number;
+  verdict: 'struggles' | 'succeeds' | 'neutral';
 }
 
 export interface GameLogEntry {

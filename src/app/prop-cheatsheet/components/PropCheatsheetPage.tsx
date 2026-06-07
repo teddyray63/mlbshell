@@ -7,14 +7,26 @@ import Topbar from '@/components/Topbar';
 import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
+import StatCell from '@/components/ui/StatCell';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
-import { formatEV } from '@/utils/formatters';
+import { formatEV, formatAvg } from '@/utils/formatters';
 import type { PropCalculation, WeatherCondition } from '../../../../shared/types';
 import type { ConfidenceLevel } from '../../../../shared/constants';
 
-type SortKey = 'player' | 'prop' | 'line' | 'edge' | 'hitRate' | 'windImpact' | 'confidence';
+type SortKey =
+  | 'player'
+  | 'prop'
+  | 'line'
+  | 'edge'
+  | 'hitRate'
+  | 'exitVelo'
+  | 'barrelPct'
+  | 'xwoba'
+  | 'parkFactor'
+  | 'windImpact'
+  | 'confidence';
 type SortDir = 'asc' | 'desc';
 
 const CONFIDENCE_BADGE: Record<
@@ -41,9 +53,20 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' | 'right'
   { key: 'line', label: 'Line', align: 'center' },
   { key: 'edge', label: 'Edge%', align: 'right' },
   { key: 'hitRate', label: 'Hit Rate', align: 'right' },
+  { key: 'exitVelo', label: 'Exit Velo', align: 'right' },
+  { key: 'barrelPct', label: 'Barrel%', align: 'right' },
+  { key: 'xwoba', label: 'xwOBA', align: 'right' },
+  { key: 'parkFactor', label: 'Park Factor', align: 'center' },
   { key: 'windImpact', label: 'Weather Impact', align: 'center' },
   { key: 'confidence', label: 'Confidence', align: 'center' },
 ];
+
+function parkVariant(pf: number | undefined): 'positive' | 'negative' | 'neutral' {
+  if (pf == null) return 'neutral';
+  if (pf >= 103) return 'positive';
+  if (pf <= 97) return 'negative';
+  return 'neutral';
+}
 
 const CONF_ORDER: Record<ConfidenceLevel, number> = { high: 2, medium: 1, low: 0 };
 const WIND_ORDER: Record<WeatherCondition['windImpact'], number> = {
@@ -111,6 +134,22 @@ export default function PropCheatsheetPage() {
         case 'hitRate':
           av = a.hitRate ?? 0;
           bv = b.hitRate ?? 0;
+          break;
+        case 'exitVelo':
+          av = a.exitVelo ?? 0;
+          bv = b.exitVelo ?? 0;
+          break;
+        case 'barrelPct':
+          av = a.barrelPct ?? 0;
+          bv = b.barrelPct ?? 0;
+          break;
+        case 'xwoba':
+          av = a.xwoba ?? 0;
+          bv = b.xwoba ?? 0;
+          break;
+        case 'parkFactor':
+          av = a.parkFactor ?? 0;
+          bv = b.parkFactor ?? 0;
           break;
         case 'windImpact':
           av = WIND_ORDER[weatherMap[a.gameId ?? ''] ?? 'neutral'];
@@ -229,6 +268,24 @@ export default function PropCheatsheetPage() {
                       </td>
                       <td className="px-2 py-2 text-right font-mono-data text-muted-foreground">
                         {p.hitRate != null ? `${Math.round(p.hitRate * 100)}%` : '—'}
+                      </td>
+                      <StatCell
+                        stat="exitVelo"
+                        value={p.exitVelo}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : v.toFixed(1))}
+                      />
+                      <StatCell
+                        stat="barrelPct"
+                        value={p.barrelPct}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : `${v.toFixed(1)}%`)}
+                      />
+                      <StatCell stat="xwoba" value={p.xwoba} type="batter" format={formatAvg} />
+                      <td className="px-2 py-2 text-center">
+                        <StatusBadge variant={parkVariant(p.parkFactor)}>
+                          {p.parkFactor != null ? `PF ${p.parkFactor}` : '—'}
+                        </StatusBadge>
                       </td>
                       <td className="px-2 py-2 text-center">
                         <StatusBadge variant={windBadge.variant}>{windBadge.label}</StatusBadge>

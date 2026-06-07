@@ -8,6 +8,7 @@
  */
 
 import { buildPropCalculations } from '../../../shared/propMath';
+import { enrichCalculation, enrichPlayerProp } from '../../../shared/enrich';
 import {
   mockGameList,
   mockWeatherList,
@@ -15,7 +16,9 @@ import {
   mockTeamRankings,
   mockSavedEdgesSeed,
   mockAnalyticsData,
+  mockPlayerEnrichment,
 } from '../../data/mockProps';
+import { buildMockMatchup } from '../../data/mockMatchup';
 
 const EDGES_KEY = (userId) => `mlbshell:saved-edges:${userId || 'guest'}`;
 
@@ -69,29 +72,30 @@ class MockAdapter {
     return mockGameList;
   }
 
-  async getMatchup(_pitcherId, _batterId) {
-    return null;
-  }
-
   /** Raw prop lines (PlayerProp shape) — optionally filtered by gameId. */
   async getPropLines(gameId) {
     const calcs = this._calcs();
-    const lines = calcs.map((c) => ({
-      id: `prop-${c.playerId}`,
-      playerId: c.playerId,
-      player: c.player,
-      team: c.team,
-      opponent: c.opponent,
-      gameId: c.gameId,
-      prop: c.statType,
-      line: c.line,
-      overOdds: c.overOdds,
-      underOdds: c.underOdds,
-      projection: c.projectedValue,
-      edge: c.edge,
-      hitRate: c.hitRate,
-      sampleSize: c.sampleSize,
-    }));
+    const lines = calcs.map((c) =>
+      enrichPlayerProp(
+        {
+          id: `prop-${c.playerId}`,
+          playerId: c.playerId,
+          player: c.player,
+          team: c.team,
+          opponent: c.opponent,
+          gameId: c.gameId,
+          prop: c.statType,
+          line: c.line,
+          overOdds: c.overOdds,
+          underOdds: c.underOdds,
+          projection: c.projectedValue,
+          edge: c.edge,
+          hitRate: c.hitRate,
+          sampleSize: c.sampleSize,
+        },
+        mockPlayerEnrichment[c.playerId]
+      )
+    );
     return gameId ? lines.filter((l) => l.gameId === gameId) : lines;
   }
 
@@ -104,6 +108,25 @@ class MockAdapter {
     return this._calcs().find((c) => c.playerId === playerId) || null;
   }
 
+  /** Full matchup payload synthesized from the seed (mirrors fetch-mode shape). */
+  async getMatchup(gameId) {
+    return buildMockMatchup(gameId);
+  }
+
+  /** Statcast leaderboard for visual-analytics charts. */
+  async getStatcastLeaderboard(stat = 'barrel') {
+    const items = Object.values(mockPlayerEnrichment)
+      .map((e) => e.statcast)
+      .filter(Boolean)
+      .map((s) => ({
+        name: shortName(s.name),
+        value: stat === 'barrel' ? s.barrelPct : stat === 'xwoba' ? s.xwoba : s.exitVelo,
+      }))
+      .filter((x) => x.value != null)
+      .sort((a, b) => b.value - a.value);
+    return items;
+  }
+
   _calcs() {
     if (!this._cachedCalcs) {
       this._cachedCalcs = buildPropCalculations(
@@ -111,7 +134,7 @@ class MockAdapter {
         mockGameList,
         mockWeatherList,
         new Date()
-      );
+      ).map((c) => enrichCalculation(c, mockPlayerEnrichment[c.playerId]));
     }
     return this._cachedCalcs;
   }
@@ -137,8 +160,7 @@ class MockAdapter {
   }
 
   async getParkFactors(parkId) {
-    const wx = mockWeatherList.find((w) => w.venue === parkId);
-    return wx ? { venue: wx.venue, parkFactor: wx.parkFactor } : null;
+    return buildMockMatchup.parkFactor(parkId);
   }
 
   async getTeamRankings(division) {
@@ -205,6 +227,13 @@ class MockAdapter {
     this.setCurrentUser(null);
     return { success: true };
   }
+}
+
+/** "Judge, Aaron" → "A. Judge" */
+function shortName(full) {
+  if (!full) return '';
+  const [last, first] = full.split(',').map((s) => s.trim());
+  return first ? `${first[0]}. ${last}` : last;
 }
 
 function btoaSafe(str) {

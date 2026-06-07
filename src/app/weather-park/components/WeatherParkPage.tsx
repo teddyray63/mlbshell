@@ -10,7 +10,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
-import type { WeatherCondition } from '../../../../shared/types';
+import type { WeatherCondition, ParkFactor } from '../../../../shared/types';
 
 const IMPACT_BADGE: Record<
   WeatherCondition['windImpact'],
@@ -32,6 +32,20 @@ export default function WeatherParkPage() {
     () => (impact === 'all' ? venues : venues.filter((v) => v.windImpact === impact)),
     [venues, impact]
   );
+
+  // Pull Baseball Savant park-factor ratings for each venue once weather loads.
+  const venueKey = venues.map((v) => v.venue).join('|');
+  const parkApi = useApi<ParkFactor[]>(async () => {
+    const results = await Promise.all(venues.map((v) => apiClient.getParkFactors(v.venue)));
+    return results.filter((p): p is ParkFactor => p != null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueKey]);
+  const parkMap = useMemo(() => {
+    const m: Record<string, ParkFactor> = {};
+    for (const p of parkApi.data ?? []) m[p.venue] = p;
+    return m;
+  }, [parkApi.data]);
+  const currentYear = new Date().getFullYear();
 
   const filters: { key: ImpactFilter; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -126,6 +140,61 @@ export default function WeatherParkPage() {
                       sub={`precip ${v.precipitation}%`}
                     />
                   </div>
+
+                  {/* Baseball Savant park-factor ratings + last-3-season HR rates */}
+                  {(() => {
+                    const pf = parkMap[v.venue];
+                    if (parkApi.loading) {
+                      return <div className="h-12 animate-pulse rounded-md bg-muted/40" />;
+                    }
+                    if (!pf) return null;
+                    return (
+                      <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Savant Park Factors
+                          </span>
+                          <span className="flex gap-1.5">
+                            <StatusBadge
+                              variant={
+                                pf.hrFactor >= 103
+                                  ? 'positive'
+                                  : pf.hrFactor <= 97
+                                    ? 'negative'
+                                    : 'neutral'
+                              }
+                            >
+                              HR {pf.hrFactor}
+                            </StatusBadge>
+                            <StatusBadge variant="neutral">Runs {pf.runsFactor}</StatusBadge>
+                          </span>
+                        </div>
+                        <div className="flex items-end justify-between gap-1">
+                          {pf.hrRateL3.map((rate, i) => {
+                            const yr = currentYear - (pf.hrRateL3.length - 1 - i);
+                            const max = Math.max(...pf.hrRateL3, 1);
+                            return (
+                              <div key={yr} className="flex flex-1 flex-col items-center gap-1">
+                                <div className="flex h-10 w-full items-end">
+                                  <div
+                                    className="w-full rounded-t bg-primary/70"
+                                    style={{ height: `${(rate / max) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="font-mono-data text-[10px] text-foreground">
+                                  {rate.toFixed(2)}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground">{yr}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-1 text-center text-[9px] text-muted-foreground">
+                          HR/game last 3 seasons
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}

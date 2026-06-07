@@ -14,7 +14,14 @@ import type {
   AnalyticsData,
   SavedEdge,
   PublicUser,
+  MatchupGame,
+  ParkFactor,
 } from '../../shared/types';
+
+export interface StatLeaderEntry {
+  name: string;
+  value: number;
+}
 
 export interface AuthResult {
   user: PublicUser;
@@ -28,6 +35,9 @@ export interface ApiClient {
   getPropLines(gameId?: string): Promise<PlayerProp[]>;
   getPropCalculations(): Promise<PropCalculation[]>;
   getPropCalculation(playerId: string): Promise<PropCalculation | null>;
+  getMatchup(gameId: string, date?: string): Promise<MatchupGame | null>;
+  getStatcastLeaderboard(stat?: 'barrel' | 'xwoba' | 'exitVelo'): Promise<StatLeaderEntry[]>;
+  getParkFactors(venue: string): Promise<ParkFactor | null>;
   getWeather(venue: string): Promise<WeatherCondition | null>;
   getAllWeather(): Promise<WeatherCondition[]>;
   getTeamRankings(division?: string): Promise<TeamRanking[]>;
