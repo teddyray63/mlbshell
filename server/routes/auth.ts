@@ -22,20 +22,20 @@ const authLimiter = rateLimit({
   message: { data: null, error: 'Too many attempts, please try again later.' },
 });
 
-router.post('/register', authLimiter, (req: Request, res: Response) => {
+router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body ?? {};
-    const result = registerUser(email, password);
+    const result = await registerUser(email, password);
     ok(res, result);
   } catch (e) {
     fail(res, 400, msg(e));
   }
 });
 
-router.post('/login', authLimiter, (req: Request, res: Response) => {
+router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body ?? {};
-    const result = loginUser(email, password);
+    const result = await loginUser(email, password);
     ok(res, result);
   } catch (e) {
     fail(res, 401, msg(e));

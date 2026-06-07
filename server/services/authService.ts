@@ -49,11 +49,11 @@ export interface AuthResult {
   token: string;
 }
 
-export function registerUser(email: string, password: string): AuthResult {
+export async function registerUser(email: string, password: string): Promise<AuthResult> {
   const normalized = email.trim().toLowerCase();
   if (!normalized || !password) throw new Error('Email and password are required');
   if (password.length < 6) throw new Error('Password must be at least 6 characters');
-  if (getUserByEmail(normalized)) throw new Error('An account with this email already exists');
+  if (await getUserByEmail(normalized)) throw new Error('An account with this email already exists');
 
   const user: User = {
     id: `user-${crypto.randomUUID()}`,
@@ -61,22 +61,22 @@ export function registerUser(email: string, password: string): AuthResult {
     passwordHash: hashPassword(password),
     createdAt: new Date().toISOString(),
   };
-  createUser(user);
+  await createUser(user);
   return { user: toPublicUser(user), token: generateToken(user) };
 }
 
-export function loginUser(email: string, password: string): AuthResult {
+export async function loginUser(email: string, password: string): Promise<AuthResult> {
   const normalized = email.trim().toLowerCase();
-  const user = getUserByEmail(normalized);
+  const user = await getUserByEmail(normalized);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     throw new Error('Invalid email or password');
   }
   return { user: toPublicUser(user), token: generateToken(user) };
 }
 
-export function getUserFromToken(token: string): PublicUser | null {
+export async function getUserFromToken(token: string): Promise<PublicUser | null> {
   const payload = verifyToken(token);
   if (!payload) return null;
-  const user = getUserById(payload.sub);
+  const user = await getUserById(payload.sub);
   return user ? toPublicUser(user) : null;
 }
