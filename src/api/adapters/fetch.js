@@ -64,8 +64,12 @@ class FetchAdapter {
     return this._get('/api/games', { date });
   }
 
-  async getMatchup(pitcherId, batterId) {
-    return this._get(`/api/matchup/${pitcherId}/${batterId}`);
+  async getMatchup(gameId, date) {
+    return this._get(`/api/matchup/${gameId}`, { date });
+  }
+
+  async getStatcastLeaderboard(stat = 'barrel') {
+    return this._get('/api/matchup/leaderboard/statcast', { stat });
   }
 
   async getPropLines(gameId) {
@@ -102,7 +106,7 @@ class FetchAdapter {
   }
 
   async getParkFactors(parkId) {
-    return this._get(`/api/park/${parkId}/factors`);
+    return this._get(`/api/matchup/park/${encodeURIComponent(parkId)}/factors`);
   }
 
   async getTeamRankings(division) {

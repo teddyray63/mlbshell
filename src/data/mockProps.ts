@@ -12,4 +12,5 @@ export {
   mockTeamRankings,
   mockSavedEdgesSeed,
   mockAnalyticsData,
+  mockPlayerEnrichment,
 } from '../../shared/mockSeed';

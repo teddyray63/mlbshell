@@ -6,7 +6,28 @@
  */
 
 import type { PlayerPropInput, GameStatLog } from './propMath';
-import type { Game, WeatherCondition, TeamRanking, SavedEdge, AnalyticsData } from './types';
+import type {
+  Game,
+  WeatherCondition,
+  TeamRanking,
+  SavedEdge,
+  AnalyticsData,
+  BatterStatcast,
+} from './types';
+
+/**
+ * Statcast enrichment for the seed prop universe. Values are a real snapshot
+ * pulled from Baseball Savant leaderboards (so mock mode mirrors live data).
+ * `mlbId` lets the Express backend re-fetch genuinely live Statcast in fetch
+ * mode; `parkFactor` is the player's home-game venue factor (100 = neutral).
+ */
+export interface PlayerEnrichment {
+  mlbId: string;
+  handedness: 'L' | 'R' | 'S';
+  position: string;
+  parkFactor: number;
+  statcast?: BatterStatcast;
+}
 
 // ─── Deterministic RNG ──────────────────────────────────────────────────────
 
@@ -351,6 +372,229 @@ export const mockPlayerPropInputs: PlayerPropInput[] = [
     log: makeLog(112, ['MIL', 'STL', 'CIN', 'PIT'], 25, 1.1, 0.8, 0.2, 4),
   },
 ];
+
+// ─── Statcast enrichment (real Baseball Savant snapshot) ────────────────────
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+function sc(playerId: string, name: string, v: Partial<BatterStatcast>): BatterStatcast {
+  return { playerId, name, year: CURRENT_YEAR, ...v };
+}
+
+export const mockPlayerEnrichment: Record<string, PlayerEnrichment> = {
+  'p-judge': {
+    mlbId: '592450',
+    handedness: 'R',
+    position: 'RF',
+    parkFactor: 105,
+    statcast: sc('592450', 'Judge, Aaron', {
+      pa: 261,
+      ba: 0.248,
+      slg: 0.533,
+      woba: 0.389,
+      xwoba: 0.415,
+      xba: 0.27,
+      xslg: 0.6,
+      exitVelo: 94.1,
+      barrelPct: 21.7,
+      hardHitPct: 57.3,
+      launchAngle: 14.6,
+      kPct: 26.5,
+      bbPct: 18.0,
+    }),
+  },
+  'p-soto': {
+    mlbId: '665742',
+    handedness: 'L',
+    position: 'RF',
+    parkFactor: 105,
+    statcast: sc('665742', 'Soto, Juan', {
+      pa: 197,
+      ba: 0.287,
+      slg: 0.55,
+      woba: 0.392,
+      xwoba: 0.406,
+      xba: 0.28,
+      xslg: 0.56,
+      exitVelo: 93.0,
+      barrelPct: 16.8,
+      hardHitPct: 49.0,
+      launchAngle: 15.6,
+      kPct: 16.8,
+      bbPct: 19.0,
+    }),
+  },
+  'p-cole': { mlbId: '543037', handedness: 'R', position: 'P', parkFactor: 105 },
+  'p-betts': {
+    mlbId: '605141',
+    handedness: 'R',
+    position: 'RF',
+    parkFactor: 100,
+    statcast: sc('605141', 'Betts, Mookie', {
+      pa: 180,
+      ba: 0.262,
+      slg: 0.43,
+      woba: 0.336,
+      xwoba: 0.338,
+      xba: 0.26,
+      xslg: 0.43,
+      exitVelo: 89.2,
+      barrelPct: 8.4,
+      hardHitPct: 42.1,
+      launchAngle: 16.2,
+      kPct: 13.5,
+      bbPct: 9.5,
+    }),
+  },
+  'p-ohtani': {
+    mlbId: '660271',
+    handedness: 'L',
+    position: 'DH',
+    parkFactor: 100,
+    statcast: sc('660271', 'Ohtani, Shohei', {
+      pa: 274,
+      ba: 0.296,
+      slg: 0.511,
+      woba: 0.398,
+      xwoba: 0.409,
+      xba: 0.28,
+      xslg: 0.55,
+      exitVelo: 93.6,
+      barrelPct: 15.2,
+      hardHitPct: 53.0,
+      launchAngle: 12.7,
+      kPct: 24.0,
+      bbPct: 12.5,
+    }),
+  },
+  'p-freeman': {
+    mlbId: '518692',
+    handedness: 'L',
+    position: '1B',
+    parkFactor: 100,
+    statcast: sc('518692', 'Freeman, Freddie', {
+      pa: 267,
+      ba: 0.276,
+      slg: 0.478,
+      woba: 0.366,
+      xwoba: 0.373,
+      xba: 0.29,
+      xslg: 0.49,
+      exitVelo: 91.1,
+      barrelPct: 11.6,
+      hardHitPct: 46.8,
+      launchAngle: 11.5,
+      kPct: 16.0,
+      bbPct: 8.5,
+    }),
+  },
+  'p-snell': { mlbId: '605483', handedness: 'L', position: 'P', parkFactor: 100 },
+  'p-altuve': {
+    mlbId: '514888',
+    handedness: 'R',
+    position: '2B',
+    parkFactor: 99,
+    statcast: sc('514888', 'Altuve, Jose', {
+      pa: 189,
+      ba: 0.246,
+      slg: 0.377,
+      woba: 0.313,
+      xwoba: 0.312,
+      xba: 0.25,
+      xslg: 0.38,
+      exitVelo: 86.2,
+      barrelPct: 6.1,
+      hardHitPct: 36.4,
+      launchAngle: 8.3,
+      kPct: 17.5,
+      bbPct: 6.5,
+    }),
+  },
+  'p-tucker': {
+    mlbId: '663656',
+    handedness: 'L',
+    position: 'RF',
+    parkFactor: 99,
+    statcast: sc('663656', 'Tucker, Kyle', {
+      pa: 260,
+      ba: 0.24,
+      slg: 0.391,
+      woba: 0.325,
+      xwoba: 0.33,
+      xba: 0.25,
+      xslg: 0.42,
+      exitVelo: 89.0,
+      barrelPct: 5.6,
+      hardHitPct: 39.3,
+      launchAngle: 16.8,
+      kPct: 15.0,
+      bbPct: 13.0,
+    }),
+  },
+  'p-alvarez': {
+    mlbId: '670541',
+    handedness: 'L',
+    position: 'DH',
+    parkFactor: 99,
+    statcast: sc('670541', 'Alvarez, Yordan', {
+      pa: 280,
+      ba: 0.316,
+      slg: 0.645,
+      woba: 0.451,
+      xwoba: 0.492,
+      xba: 0.31,
+      xslg: 0.66,
+      exitVelo: 94.8,
+      barrelPct: 18.4,
+      hardHitPct: 54.1,
+      launchAngle: 19.4,
+      kPct: 19.0,
+      bbPct: 11.5,
+    }),
+  },
+  'p-suzuki': {
+    mlbId: '673548',
+    handedness: 'R',
+    position: 'RF',
+    parkFactor: 102,
+    statcast: sc('673548', 'Suzuki, Seiya', {
+      pa: 209,
+      ba: 0.247,
+      slg: 0.423,
+      woba: 0.335,
+      xwoba: 0.329,
+      xba: 0.25,
+      xslg: 0.43,
+      exitVelo: 89.1,
+      barrelPct: 9.3,
+      hardHitPct: 41.9,
+      launchAngle: 18.1,
+      kPct: 22.0,
+      bbPct: 8.0,
+    }),
+  },
+  'p-happ': {
+    mlbId: '664023',
+    handedness: 'S',
+    position: 'LF',
+    parkFactor: 102,
+    statcast: sc('664023', 'Happ, Ian', {
+      pa: 266,
+      ba: 0.235,
+      slg: 0.487,
+      woba: 0.364,
+      xwoba: 0.346,
+      xba: 0.24,
+      xslg: 0.47,
+      exitVelo: 90.6,
+      barrelPct: 16.3,
+      hardHitPct: 46.8,
+      launchAngle: 16.1,
+      kPct: 24.5,
+      bbPct: 11.0,
+    }),
+  },
+};
 
 // ─── Team Rankings ──────────────────────────────────────────────────────────
 

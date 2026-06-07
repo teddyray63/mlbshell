@@ -1,0 +1,266 @@
+/**
+ * mockMatchup — synthesizes a full MatchupGame payload from the seed universe so
+ * the /matchup-engine page renders identically in mock mode and fetch mode.
+ *
+ * Pitcher splits / arsenals and filler batters are generated deterministically
+ * so the UI (color coding, CSV export, pitch filters) has realistic data.
+ */
+
+import {
+  mockGameList,
+  mockWeatherList,
+  mockPlayerPropInputs,
+  mockPlayerEnrichment,
+} from './mockProps';
+
+// ─── Park factors (real-ish snapshot for the seed venues) ────────────────────
+
+const PARK_FACTORS = {
+  'Yankee Stadium': { parkFactor: 105, hrFactor: 113, runsFactor: 103, hrRateL3: [2.9, 2.8, 3.0] },
+  'Dodger Stadium': { parkFactor: 100, hrFactor: 106, runsFactor: 99, hrRateL3: [2.7, 2.6, 2.8] },
+  'Minute Maid Park': { parkFactor: 99, hrFactor: 101, runsFactor: 100, hrRateL3: [2.5, 2.6, 2.5] },
+  'Truist Park': { parkFactor: 102, hrFactor: 104, runsFactor: 101, hrRateL3: [2.6, 2.7, 2.6] },
+  'Wrigley Field': { parkFactor: 102, hrFactor: 108, runsFactor: 103, hrRateL3: [2.7, 2.9, 2.6] },
+};
+
+function parkFactor(venue) {
+  const p = PARK_FACTORS[venue];
+  return p ? { venue, ...p } : null;
+}
+
+// ─── Deterministic helpers ───────────────────────────────────────────────────
+
+function hash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
+const round = (n, dp) => Math.round(n * 10 ** dp) / 10 ** dp;
+
+// ─── Pitcher synthesis ───────────────────────────────────────────────────────
+
+const PITCH_LIBRARY = [
+  { pitchType: 'FF', pitchName: '4-Seam Fastball', velo: 95.6 },
+  { pitchType: 'SL', pitchName: 'Slider', velo: 87.2 },
+  { pitchType: 'CH', pitchName: 'Changeup', velo: 88.1 },
+  { pitchType: 'CU', pitchName: 'Curveball', velo: 80.4 },
+  { pitchType: 'SI', pitchName: 'Sinker', velo: 94.3 },
+];
+
+function makeSplits(id) {
+  const base = hash(id);
+  const rows = [
+    { split: 'Season', m: 1.0 },
+    { split: 'vsLHB', m: 1.08 },
+    { split: 'vsRHB', m: 0.94 },
+  ];
+  return rows.map(({ split, m }) => {
+    const woba = round((0.295 + base * 0.05) * m, 3);
+    const kPct = round((26 + base * 6) / m, 1);
+    return {
+      split,
+      ip: split === 'Season' ? round(60 + base * 40, 1) : undefined,
+      bf: split === 'Season' ? Math.round(260 + base * 120) : Math.round(120 + base * 60),
+      baa: round((0.225 + base * 0.03) * m, 3),
+      woba,
+      slg: round((0.38 + base * 0.06) * m, 3),
+      iso: round((0.14 + base * 0.04) * m, 3),
+      whip: round((1.05 + base * 0.25) * m, 2),
+      hr: Math.round((8 + base * 8) * m),
+      hr9: round((0.9 + base * 0.6) * m, 2),
+      bbPct: round((6 + base * 4) * m, 1),
+      whiffPct: round((28 + base * 8) / m, 1),
+      kPct,
+      putawayPct: round((19 + base * 5) / m, 1),
+      swstrPct: round((11 + base * 4) / m, 1),
+      k9: round((9 + base * 3) / m, 1),
+      firstPitchStrikePct: round(58 + base * 10, 1),
+    };
+  });
+}
+
+function makeArsenal(id) {
+  const base = hash(id + 'arsenal');
+  const n = 4 + (base > 0.6 ? 1 : 0);
+  const pitches = PITCH_LIBRARY.slice(0, n);
+  const usages = [42, 24, 16, 12, 6].slice(0, n);
+  return pitches.map((p, i) => {
+    const b = hash(id + p.pitchType);
+    return {
+      pitchType: p.pitchType,
+      pitchName: p.pitchName,
+      count: Math.round((300 + b * 400) * (usages[i] / 100)),
+      usagePct: usages[i],
+      bbe: Math.round(40 + b * 60),
+      ba: round(0.21 + b * 0.07, 3),
+      woba: round(0.28 + b * 0.08, 3),
+      slg: round(0.35 + b * 0.12, 3),
+      iso: round(0.12 + b * 0.06, 3),
+      hr: Math.round(b * 6),
+      bbPct: round(5 + b * 5, 1),
+      whiffPct: round(22 + b * 16, 1),
+      kPct: round(20 + b * 12, 1),
+      putawayPct: round(16 + b * 8, 1),
+      swstrPct: round(9 + b * 7, 1),
+      velo: round(p.velo + (b - 0.5) * 2, 1),
+      exitVelo: round(87 + b * 6, 1),
+      launchAngle: round(8 + b * 12, 1),
+      hardHitPct: round(35 + b * 15, 1),
+    };
+  });
+}
+
+function hrRisk(v) {
+  return v > 0.66 ? 'high' : v < 0.4 ? 'low' : 'medium';
+}
+
+function makePitcher(seedPlayerId, name, team, throws) {
+  const id = seedPlayerId || `${team}-sp`;
+  const r = hash(id + 'risk');
+  return {
+    playerId: mockPlayerEnrichment[seedPlayerId]?.mlbId || id,
+    name,
+    team,
+    throws,
+    hrRiskVsLHB: hrRisk(hash(id + 'L')),
+    hrRiskVsRHB: hrRisk(r),
+    splits: makeSplits(id),
+    arsenal: makeArsenal(id),
+  };
+}
+
+// ─── Batter synthesis ────────────────────────────────────────────────────────
+
+function batterFromEnrichment(input) {
+  const enr = mockPlayerEnrichment[input.playerId];
+  const sc = enr?.statcast;
+  const b = hash(input.playerId);
+  return {
+    playerId: enr?.mlbId || input.playerId,
+    name: input.player,
+    team: input.team,
+    handedness: enr?.handedness || 'R',
+    battingOrder: undefined,
+    odds: input.overOdds,
+    pa: sc?.pa ?? Math.round(180 + b * 100),
+    l5PaPerG: round(3.8 + b * 0.8, 1),
+    hr: Math.round((sc?.barrelPct ?? 8) * 0.8),
+    nearHr: Math.round((sc?.barrelPct ?? 8) * 0.5),
+    ba: sc?.ba,
+    obp: sc?.ba != null ? round(sc.ba + 0.07 + b * 0.03, 3) : undefined,
+    slg: sc?.slg,
+    iso: sc?.slg != null && sc?.ba != null ? round(sc.slg - sc.ba, 3) : undefined,
+    woba: sc?.woba,
+    bbPct: sc?.bbPct,
+    whiffPct: sc?.kPct != null ? round(sc.kPct + 6, 1) : undefined,
+    kPct: sc?.kPct,
+    swstrPct: sc?.kPct != null ? round(sc.kPct * 0.5, 1) : undefined,
+  };
+}
+
+const FILLER_NAMES = [
+  ['Carlos Mendez', 'R'],
+  ['Tyler Brooks', 'L'],
+  ['Diego Ramirez', 'S'],
+  ['Sam Coleman', 'R'],
+  ['Andre Watts', 'L'],
+  ['Marcus Lee', 'R'],
+  ['Owen Parker', 'L'],
+];
+
+function fillerBatter(team, i, gameId) {
+  const id = `${team}-fill-${i}`;
+  const b = hash(id + gameId);
+  const [name, hand] = FILLER_NAMES[i % FILLER_NAMES.length];
+  const ba = round(0.23 + b * 0.06, 3);
+  const slg = round(0.36 + b * 0.16, 3);
+  const kPct = round(18 + b * 12, 1);
+  return {
+    playerId: id,
+    name,
+    team,
+    handedness: hand,
+    odds: b > 0.5 ? Math.round(120 + b * 120) : -Math.round(110 + b * 60),
+    pa: Math.round(150 + b * 120),
+    l5PaPerG: round(3.6 + b * 0.9, 1),
+    hr: Math.round(b * 10),
+    nearHr: Math.round(b * 6),
+    ba,
+    obp: round(ba + 0.06 + b * 0.03, 3),
+    slg,
+    iso: round(slg - ba, 3),
+    woba: round(0.3 + b * 0.08, 3),
+    bbPct: round(6 + b * 5, 1),
+    whiffPct: round(kPct + 6, 1),
+    kPct,
+    swstrPct: round(kPct * 0.5, 1),
+  };
+}
+
+// ─── Public builder ──────────────────────────────────────────────────────────
+
+const SEED_PITCHERS = {
+  'game-1': {
+    home: ['p-cole', 'Gerrit Cole', 'NYY', 'R'],
+    away: [null, 'Brayan Bello', 'BOS', 'R'],
+  },
+  'game-2': { home: ['p-snell', 'Blake Snell', 'LAD', 'L'], away: [null, 'Logan Webb', 'SF', 'R'] },
+  'game-3': {
+    home: [null, 'Framber Valdez', 'HOU', 'L'],
+    away: [null, 'Nathan Eovaldi', 'TEX', 'R'],
+  },
+  'game-4': {
+    home: [null, 'Spencer Strider', 'ATL', 'R'],
+    away: [null, 'Zack Wheeler', 'PHI', 'R'],
+  },
+  'game-5': {
+    home: [null, 'Shota Imanaga', 'CHC', 'L'],
+    away: [null, 'Freddy Peralta', 'MIL', 'R'],
+  },
+};
+
+export function buildMockMatchup(gameId) {
+  const game = mockGameList.find((g) => g.id === gameId) || mockGameList[0];
+  if (!game) return null;
+  const wx = mockWeatherList.find((w) => w.gameId === game.id) || null;
+
+  const sp = SEED_PITCHERS[game.id] || {
+    home: [null, `${game.homeTeam} Starter`, game.homeTeam, 'R'],
+    away: [null, `${game.awayTeam} Starter`, game.awayTeam, 'R'],
+  };
+  const pitchers = [makePitcher(...sp.home), makePitcher(...sp.away)];
+
+  // Batters: enriched seed hitters in this game + deterministic filler to ~9 per side.
+  const seedHitters = mockPlayerPropInputs.filter(
+    (p) => p.gameId === game.id && !p.statType.includes('Pitcher')
+  );
+  const batters = seedHitters.map(batterFromEnrichment);
+  const sides = [game.awayTeam, game.homeTeam];
+  for (const team of sides) {
+    const have = batters.filter((b) => b.team === team).length;
+    for (let i = have; i < 5; i += 1) batters.push(fillerBatter(team, i, game.id));
+  }
+  batters.forEach((b, i) => {
+    b.battingOrder = (i % 9) + 1;
+  });
+
+  return {
+    gameId: game.id,
+    homeTeam: game.homeTeam,
+    awayTeam: game.awayTeam,
+    venue: game.venue,
+    gameTime: game.gameTime,
+    overUnder: game.overUnder,
+    lineupConfirmed: game.status === 'scheduled' || game.status === 'live',
+    weather: wx,
+    parkFactor: parkFactor(game.venue),
+    pitchers,
+    batters,
+  };
+}
+
+buildMockMatchup.parkFactor = parkFactor;

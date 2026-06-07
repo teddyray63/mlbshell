@@ -8,15 +8,32 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import FilterChip from '@/components/ui/FilterChip';
 import EmptyState from '@/components/ui/EmptyState';
+import StatCell from '@/components/ui/StatCell';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
-import { formatEV, formatOdds } from '@/utils/formatters';
+import { formatEV, formatOdds, formatAvg } from '@/utils/formatters';
 import type { PropCalculation } from '../../../../shared/types';
 import type { ConfidenceLevel } from '../../../../shared/constants';
 
-type SortKey = 'player' | 'prop' | 'line' | 'projectedValue' | 'edge' | 'hitRate' | 'ev';
+type SortKey =
+  | 'player'
+  | 'prop'
+  | 'line'
+  | 'projectedValue'
+  | 'edge'
+  | 'hitRate'
+  | 'ev'
+  | 'exitVelo'
+  | 'barrelPct'
+  | 'hardHitPct'
+  | 'xwoba'
+  | 'edgeVsRHP'
+  | 'edgeVsLHP'
+  | 'whiffPct';
 type SortDir = 'asc' | 'desc';
+
+const PITCH_CHIPS = ['4-Seam Fastball', 'Slider', 'Curveball', 'Changeup', 'Sinker'];
 
 const CONFIDENCE_BADGE: Record<
   ConfidenceLevel,
@@ -35,6 +52,13 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' | 'right'
   { key: 'edge', label: 'Edge%', align: 'right' },
   { key: 'hitRate', label: 'Hit Rate', align: 'right' },
   { key: 'ev', label: 'EV', align: 'right' },
+  { key: 'exitVelo', label: 'Exit Velo', align: 'right' },
+  { key: 'barrelPct', label: 'Barrel%', align: 'right' },
+  { key: 'hardHitPct', label: 'Hard Hit%', align: 'right' },
+  { key: 'xwoba', label: 'xwOBA', align: 'right' },
+  { key: 'edgeVsRHP', label: 'vs RHP', align: 'right' },
+  { key: 'edgeVsLHP', label: 'vs LHP', align: 'right' },
+  { key: 'whiffPct', label: 'Whiff%', align: 'right' },
 ];
 
 export default function PlayerPropsPage() {
@@ -46,8 +70,13 @@ export default function PlayerPropsPage() {
 
   const [team, setTeam] = useState<string>('all');
   const [prop, setProp] = useState<string>('all');
+  const [side, setSide] = useState<'all' | 'rhp' | 'lhp'>('all');
+  const [pitches, setPitches] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>('edge');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const togglePitch = (p: string) =>
+    setPitches((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
   const props = useMemo(() => data ?? [], [data]);
 
@@ -70,10 +99,21 @@ export default function PlayerPropsPage() {
   };
 
   const filtered = useMemo(() => {
-    return props.filter(
-      (p) => (team === 'all' || p.team === team) && (prop === 'all' || p.statType === prop)
-    );
-  }, [props, team, prop]);
+    return props.filter((p) => {
+      if (team !== 'all' && p.team !== team) return false;
+      if (prop !== 'all' && p.statType !== prop) return false;
+      if (side === 'rhp' && p.handedness === 'R') return false; // RHB sit vs RHP less favorably; keep platoon-friendly
+      if (side === 'lhp' && p.handedness === 'L') return false;
+      if (pitches.length > 0) {
+        const vuln = p.pitchVulnerability ?? [];
+        const struggles = vuln.some(
+          (v) => pitches.includes(v.pitchType) && v.verdict === 'struggles'
+        );
+        if (!struggles) return false;
+      }
+      return true;
+    });
+  }, [props, team, prop, side, pitches]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -108,6 +148,34 @@ export default function PlayerPropsPage() {
         case 'ev':
           av = a.ev ?? 0;
           bv = b.ev ?? 0;
+          break;
+        case 'exitVelo':
+          av = a.exitVelo ?? 0;
+          bv = b.exitVelo ?? 0;
+          break;
+        case 'barrelPct':
+          av = a.barrelPct ?? 0;
+          bv = b.barrelPct ?? 0;
+          break;
+        case 'hardHitPct':
+          av = a.hardHitPct ?? 0;
+          bv = b.hardHitPct ?? 0;
+          break;
+        case 'xwoba':
+          av = a.xwoba ?? 0;
+          bv = b.xwoba ?? 0;
+          break;
+        case 'edgeVsRHP':
+          av = a.edgeVsRHP ?? 0;
+          bv = b.edgeVsRHP ?? 0;
+          break;
+        case 'edgeVsLHP':
+          av = a.edgeVsLHP ?? 0;
+          bv = b.edgeVsLHP ?? 0;
+          break;
+        case 'whiffPct':
+          av = a.whiffPct ?? 0;
+          bv = b.whiffPct ?? 0;
           break;
       }
       if (typeof av === 'string' && typeof bv === 'string') {
@@ -156,6 +224,30 @@ export default function PlayerPropsPage() {
               />
             ))}
           </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs font-semibold text-muted-foreground">Matchup</span>
+            {(['all', 'rhp', 'lhp'] as const).map((s) => (
+              <FilterChip
+                key={s}
+                label={s === 'all' ? 'All' : s === 'rhp' ? 'vs RHP' : 'vs LHP'}
+                active={side === s}
+                onClick={() => setSide(s)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Pitch type filter chips */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold text-muted-foreground">Struggles vs</span>
+          {PITCH_CHIPS.map((pt) => (
+            <FilterChip
+              key={pt}
+              label={pt}
+              active={pitches.includes(pt)}
+              onClick={() => togglePitch(pt)}
+            />
+          ))}
         </div>
 
         {error && (
@@ -202,11 +294,11 @@ export default function PlayerPropsPage() {
             <tbody>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <TableRowSkeleton key={`skel-${i}`} cols={8} />
+                  <TableRowSkeleton key={`skel-${i}`} cols={COLUMNS.length + 1} />
                 ))
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={COLUMNS.length + 1}>
                     <EmptyState
                       icon={<Activity size={28} />}
                       title="No props match these filters"
@@ -253,6 +345,41 @@ export default function PlayerPropsPage() {
                       <td className="px-3 py-2 text-right font-mono-data text-muted-foreground">
                         {p.ev != null ? p.ev.toFixed(2) : '—'}
                       </td>
+                      <StatCell
+                        stat="exitVelo"
+                        value={p.exitVelo}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : v.toFixed(1))}
+                      />
+                      <StatCell
+                        stat="barrelPct"
+                        value={p.barrelPct}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : `${v.toFixed(1)}%`)}
+                      />
+                      <StatCell
+                        stat="hardHitPct"
+                        value={p.hardHitPct}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : `${v.toFixed(1)}%`)}
+                      />
+                      <StatCell stat="xwoba" value={p.xwoba} type="batter" format={formatAvg} />
+                      <td
+                        className={`px-3 py-2 text-right font-mono-data ${(p.edgeVsRHP ?? 0) >= 5 ? 'text-positive font-bold' : (p.edgeVsRHP ?? 0) < 0 ? 'text-negative' : 'text-muted-foreground'}`}
+                      >
+                        {p.edgeVsRHP != null ? formatEV(p.edgeVsRHP) : '—'}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right font-mono-data ${(p.edgeVsLHP ?? 0) >= 5 ? 'text-positive font-bold' : (p.edgeVsLHP ?? 0) < 0 ? 'text-negative' : 'text-muted-foreground'}`}
+                      >
+                        {p.edgeVsLHP != null ? formatEV(p.edgeVsLHP) : '—'}
+                      </td>
+                      <StatCell
+                        stat="whiffPct"
+                        value={p.whiffPct}
+                        type="batter"
+                        format={(v) => (v == null ? '—' : `${v.toFixed(1)}%`)}
+                      />
                       <td className="px-3 py-2 text-center">
                         <StatusBadge variant={conf.variant}>{conf.label}</StatusBadge>
                       </td>
