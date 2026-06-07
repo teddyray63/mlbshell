@@ -41,3 +41,8 @@ coverage/
 # Misc
 *.tsbuildinfo
 next-env.d.ts
+# SQLite (server) local data
+server/data/
+*.db
+*.db-journal
+*.sqlite

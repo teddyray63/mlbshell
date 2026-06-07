@@ -17,21 +17,21 @@ interface MetricCardProps {
 }
 
 const variantStyles: Record<CardVariant, { card: string; value: string }> = {
-  default:  { card: 'card-surface', value: 'text-foreground' },
-  alert:    { card: 'card-surface border-negative/40 bg-negative-subtle', value: 'text-negative' },
-  warning:  { card: 'card-surface border-warning/40 bg-warning-subtle', value: 'text-warning' },
+  default: { card: 'card-surface', value: 'text-foreground' },
+  alert: { card: 'card-surface border-negative/40 bg-negative-subtle', value: 'text-negative' },
+  warning: { card: 'card-surface border-warning/40 bg-warning-subtle', value: 'text-warning' },
   positive: { card: 'card-surface border-positive/40 bg-positive-subtle', value: 'text-positive' },
 };
 
 const trendIcon: Record<TrendDir, React.ReactNode> = {
-  up:      <TrendingUp size={12} />,
-  down:    <TrendingDown size={12} />,
+  up: <TrendingUp size={12} />,
+  down: <TrendingDown size={12} />,
   neutral: <Minus size={12} />,
 };
 
 const trendColor: Record<TrendDir, string> = {
-  up:      'text-positive',
-  down:    'text-negative',
+  up: 'text-positive',
+  down: 'text-negative',
   neutral: 'text-muted-foreground',
 };
 
@@ -53,13 +53,9 @@ export default function MetricCard({
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
-        {icon && (
-          <span className="text-muted-foreground">{icon}</span>
-        )}
+        {icon && <span className="text-muted-foreground">{icon}</span>}
       </div>
-      <div className={`text-2xl font-bold font-mono-data ${styles.value}`}>
-        {value}
-      </div>
+      <div className={`text-2xl font-bold font-mono-data ${styles.value}`}>{value}</div>
       {(trend || subvalue) && (
         <div className="flex items-center gap-2">
           {trend && (
@@ -68,9 +64,7 @@ export default function MetricCard({
               {trendLabel}
             </span>
           )}
-          {subvalue && (
-            <span className="text-xs text-muted-foreground">{subvalue}</span>
-          )}
+          {subvalue && <span className="text-xs text-muted-foreground">{subvalue}</span>}
         </div>
       )}
     </div>

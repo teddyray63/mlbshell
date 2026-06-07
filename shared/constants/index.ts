@@ -5,13 +5,39 @@
  */
 
 export const MLB_TEAMS = [
-  'ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CWS', 'CIN', 'CLE',
-  'COL', 'DET', 'HOU', 'KC', 'LAA', 'LAD', 'MIA', 'MIL',
-  'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SF',
-  'SEA', 'STL', 'TB', 'TEX', 'TOR', 'WSH',
+  'ARI',
+  'ATL',
+  'BAL',
+  'BOS',
+  'CHC',
+  'CWS',
+  'CIN',
+  'CLE',
+  'COL',
+  'DET',
+  'HOU',
+  'KC',
+  'LAA',
+  'LAD',
+  'MIA',
+  'MIL',
+  'MIN',
+  'NYM',
+  'NYY',
+  'OAK',
+  'PHI',
+  'PIT',
+  'SD',
+  'SF',
+  'SEA',
+  'STL',
+  'TB',
+  'TEX',
+  'TOR',
+  'WSH',
 ] as const;
 
-export type MLBTeam = typeof MLB_TEAMS[number];
+export type MLBTeam = (typeof MLB_TEAMS)[number];
 
 export const PROP_TYPES = [
   'Hits',
@@ -27,10 +53,10 @@ export const PROP_TYPES = [
   'Hits Allowed',
 ] as const;
 
-export type PropType = typeof PROP_TYPES[number];
+export type PropType = (typeof PROP_TYPES)[number];
 
 export const CONFIDENCE_LEVELS = ['high', 'medium', 'low'] as const;
-export type ConfidenceLevel = typeof CONFIDENCE_LEVELS[number];
+export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
 
 // TODO: update API_ENDPOINTS to match your existing backend routes
 export const API_ENDPOINTS = {

@@ -12,9 +12,9 @@ export interface FiltersState {
 }
 
 export const defaultFilters: FiltersState = {
-  dateRange:  'today',
+  dateRange: 'today',
   handedness: 'all',
-  team:       'all',
-  position:   'all',
-  minPA:      10,
+  team: 'all',
+  position: 'all',
+  minPA: 10,
 };

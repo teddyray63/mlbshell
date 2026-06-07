@@ -13,12 +13,12 @@ const LineMovementChart = dynamic(() => import('@/charts/LineMovementChart'), {
 
 // TODO: Replace mock game with real game selection from bettingService
 const featuredGame = {
-  id:        'game-001',
-  away:      'NYY',
-  home:      'BOS',
-  time:      '7:10 PM ET',
-  total:     8.5,
-  movement:  '+1.0 since open',
+  id: 'game-001',
+  away: 'NYY',
+  home: 'BOS',
+  time: '7:10 PM ET',
+  total: 8.5,
+  movement: '+1.0 since open',
   steamMove: true,
 };
 
@@ -36,9 +36,11 @@ export default function BettingLineMovement() {
             title="Line Movement"
             subtitle={`${featuredGame.away} @ ${featuredGame.home} — Total ${featuredGame.total}`}
             actions={
-              featuredGame.steamMove
-                ? <StatusBadge variant="warning" dot>Steam Move</StatusBadge>
-                : null
+              featuredGame.steamMove ? (
+                <StatusBadge variant="warning" dot>
+                  Steam Move
+                </StatusBadge>
+              ) : null
             }
             className="mb-3"
           />
@@ -54,19 +56,22 @@ export default function BettingLineMovement() {
 
           <div className="space-y-3 text-sm">
             {[
-              { label: 'Away',         value: featuredGame.away,     badge: null },
-              { label: 'Home',         value: featuredGame.home,     badge: null },
-              { label: 'Total',        value: String(featuredGame.total), badge: null },
-              { label: 'Movement',     value: featuredGame.movement, badge: 'warning' as const },
-              { label: 'Sharp Action', value: '68% Over',            badge: 'sharp' as const },
-              { label: 'Public %',     value: '54% Under',           badge: 'square' as const },
+              { label: 'Away', value: featuredGame.away, badge: null },
+              { label: 'Home', value: featuredGame.home, badge: null },
+              { label: 'Total', value: String(featuredGame.total), badge: null },
+              { label: 'Movement', value: featuredGame.movement, badge: 'warning' as const },
+              { label: 'Sharp Action', value: '68% Over', badge: 'sharp' as const },
+              { label: 'Public %', value: '54% Under', badge: 'square' as const },
             ].map((row) => (
               <div key={`ctx-${row.label}`} className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">{row.label}</span>
-                {row.badge
-                  ? <StatusBadge variant={row.badge}>{row.value}</StatusBadge>
-                  : <span className="font-mono-data text-xs font-semibold text-foreground">{row.value}</span>
-                }
+                {row.badge ? (
+                  <StatusBadge variant={row.badge}>{row.value}</StatusBadge>
+                ) : (
+                  <span className="font-mono-data text-xs font-semibold text-foreground">
+                    {row.value}
+                  </span>
+                )}
               </div>
             ))}
           </div>

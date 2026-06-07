@@ -129,12 +129,12 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 py-4 border-b border-border ${collapsed ? 'justify-center' : ''}`}>
+      <div
+        className={`flex items-center gap-3 px-4 py-4 border-b border-border ${collapsed ? 'justify-center' : ''}`}
+      >
         <AppLogo size={32} />
         {!collapsed && (
-          <span className="font-semibold text-base text-foreground tracking-tight">
-            MLBShell
-          </span>
+          <span className="font-semibold text-base text-foreground tracking-tight">MLBShell</span>
         )}
       </div>
 
@@ -161,12 +161,12 @@ export default function Sidebar() {
                           ${active ? 'nav-item-active' : 'nav-item-inactive hover:bg-muted/50 hover:text-foreground'}`}
                         onClick={() => setMobileOpen(false)}
                       >
-                        <span className={`flex-shrink-0 ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                        <span
+                          className={`flex-shrink-0 ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                        >
                           {item.icon}
                         </span>
-                        {!collapsed && (
-                          <span className="flex-1 truncate">{item.label}</span>
-                        )}
+                        {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
                         {!collapsed && item.badge && (
                           <span className="ml-auto flex-shrink-0 text-xs font-mono-data bg-warning-subtle text-warning border border-warning rounded-full px-1.5 py-0.5 leading-none">
                             {item.badge}

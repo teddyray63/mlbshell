@@ -1,26 +1,27 @@
 /**
- * Server Routes — MLB Analytics Shell
- *
- * TODO: migrate route definitions from existing Vite/Express backend
- * TODO: register all route modules here
- *
- * Example (Express):
- *   import gamesRouter from './games';
- *   import propsRouter from './props';
- *   app.use('/api/games', gamesRouter);
- *   app.use('/api/player-props', propsRouter);
+ * Server Routes — registers all API route modules on the Express app.
  */
 
-// TODO: import and register routes as you migrate them
-// import gamesRouter from './games';
-// import propsRouter from './props';
-// import weatherRouter from './weather';
-// import rankingsRouter from './rankings';
-// import edgesRouter from './edges';
-// import analyticsRouter from './analytics';
+import type { Express } from 'express';
+import authRouter from './auth';
+import gamesRouter from './games';
+import playerPropsRouter from './playerProps';
+import weatherRouter from './weather';
+import teamRankingsRouter from './teamRankings';
+import savedEdgesRouter from './savedEdges';
+import analyticsRouter from './analytics';
 
-export const registerRoutes = (app: unknown) => {
-  // TODO: register routes here
-  console.info('[Routes] No routes registered yet — paste your route files here');
-  void app;
+export const registerRoutes = (app: Express): void => {
+  app.use('/api/auth', authRouter);
+  app.use('/api/games', gamesRouter);
+  app.use('/api/player-props', playerPropsRouter);
+  app.use('/api/weather', weatherRouter);
+  app.use('/api/team-rankings', teamRankingsRouter);
+  app.use('/api/saved-edges', savedEdgesRouter);
+  app.use('/api/analytics', analyticsRouter);
+  console.info(
+    '[Routes] Registered: auth, games, player-props, weather, team-rankings, saved-edges, analytics'
+  );
 };
+
+export default registerRoutes;

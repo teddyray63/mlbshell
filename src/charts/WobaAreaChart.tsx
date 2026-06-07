@@ -13,14 +13,14 @@ import {
 
 // TODO: Replace mockData with real wOBA trend data from analyticsService
 const mockData = [
-  { date: 'May 1',  woba: 0.298 },
-  { date: 'May 5',  woba: 0.315 },
+  { date: 'May 1', woba: 0.298 },
+  { date: 'May 5', woba: 0.315 },
   { date: 'May 10', woba: 0.341 },
   { date: 'May 15', woba: 0.328 },
   { date: 'May 20', woba: 0.355 },
   { date: 'May 25', woba: 0.342 },
   { date: 'May 29', woba: 0.368 },
-  { date: 'Jun 1',  woba: 0.361 },
+  { date: 'Jun 1', woba: 0.361 },
 ];
 
 interface WobaAreaChartProps {
@@ -46,8 +46,8 @@ export default function WobaAreaChart({ data = mockData, height = 180 }: WobaAre
       <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="wobaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
-            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}    />
+            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />

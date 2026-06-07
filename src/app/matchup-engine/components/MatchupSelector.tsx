@@ -5,24 +5,24 @@ import { Search, Zap } from 'lucide-react';
 
 // TODO: Replace static lists with real player search from analyticsService
 const MOCK_PITCHERS = [
-  { id: 'pitcher-001', name: 'Gerrit Cole',        team: 'NYY', hand: 'R', era: '3.12' },
-  { id: 'pitcher-002', name: 'Spencer Strider',    team: 'ATL', hand: 'R', era: '2.87' },
-  { id: 'pitcher-003', name: 'Kodai Senga',        team: 'NYM', hand: 'R', era: '3.41' },
-  { id: 'pitcher-004', name: 'Logan Webb',         team: 'SF',  hand: 'R', era: '3.03' },
-  { id: 'pitcher-005', name: 'Framber Valdez',     team: 'HOU', hand: 'L', era: '2.94' },
+  { id: 'pitcher-001', name: 'Gerrit Cole', team: 'NYY', hand: 'R', era: '3.12' },
+  { id: 'pitcher-002', name: 'Spencer Strider', team: 'ATL', hand: 'R', era: '2.87' },
+  { id: 'pitcher-003', name: 'Kodai Senga', team: 'NYM', hand: 'R', era: '3.41' },
+  { id: 'pitcher-004', name: 'Logan Webb', team: 'SF', hand: 'R', era: '3.03' },
+  { id: 'pitcher-005', name: 'Framber Valdez', team: 'HOU', hand: 'L', era: '2.94' },
 ];
 
 const MOCK_BATTERS = [
-  { id: 'batter-001', name: 'Manny Ramirez Jr.',  team: 'LAD', hand: 'R', avg: '.301' },
-  { id: 'batter-002', name: 'Rafael Ortega III',  team: 'ATL', hand: 'R', avg: '.312' },
-  { id: 'batter-003', name: 'Elias Fontaine',     team: 'STL', hand: 'L', avg: '.307' },
-  { id: 'batter-004', name: 'Jaime Castillo',     team: 'MIN', hand: 'R', avg: '.295' },
-  { id: 'batter-005', name: 'Tomás Vidal',        team: 'SD',  hand: 'S', avg: '.289' },
+  { id: 'batter-001', name: 'Manny Ramirez Jr.', team: 'LAD', hand: 'R', avg: '.301' },
+  { id: 'batter-002', name: 'Rafael Ortega III', team: 'ATL', hand: 'R', avg: '.312' },
+  { id: 'batter-003', name: 'Elias Fontaine', team: 'STL', hand: 'L', avg: '.307' },
+  { id: 'batter-004', name: 'Jaime Castillo', team: 'MIN', hand: 'R', avg: '.295' },
+  { id: 'batter-005', name: 'Tomás Vidal', team: 'SD', hand: 'S', avg: '.289' },
 ];
 
 export default function MatchupSelector() {
   const [pitcher, setPitcher] = useState(MOCK_PITCHERS?.[0]);
-  const [batter,  setBatter]  = useState(MOCK_BATTERS?.[0]);
+  const [batter, setBatter] = useState(MOCK_BATTERS?.[0]);
 
   return (
     <div className="card-surface p-4">
@@ -33,7 +33,10 @@ export default function MatchupSelector() {
             Pitcher
           </label>
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
             <select
               value={pitcher?.id}
               onChange={(e) => {
@@ -71,7 +74,10 @@ export default function MatchupSelector() {
             Batter
           </label>
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
             <select
               value={batter?.id}
               onChange={(e) => {
