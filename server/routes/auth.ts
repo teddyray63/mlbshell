@@ -1,39 +1,41 @@
 /**
- * Auth routes — register, login, logout. Issues a JWT stored in an httpOnly
- * cookie and also returned in the body so the client can hold it in memory.
+ * Auth routes — register, login, logout. Issues a JWT returned in the response
+ * body; the client holds it in memory (Zustand) and sends it on the
+ * Authorization: Bearer header. No cookie is set, avoiding CSRF surface and
+ * clear-text token storage in the browser cookie jar.
  */
 
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { ok, fail, msg } from './respond';
 import { loginUser, registerUser } from '../services/authService';
 
 const router = Router();
 
-const COOKIE_OPTS = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: '/',
-};
+// Stricter limiter for credential endpoints to throttle brute-force attempts.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { data: null, error: 'Too many attempts, please try again later.' },
+});
 
-router.post('/register', (req: Request, res: Response) => {
+router.post('/register', authLimiter, (req: Request, res: Response) => {
   try {
     const { email, password } = req.body ?? {};
     const result = registerUser(email, password);
-    res.cookie('token', result.token, COOKIE_OPTS);
     ok(res, result);
   } catch (e) {
     fail(res, 400, msg(e));
   }
 });
 
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', authLimiter, (req: Request, res: Response) => {
   try {
     const { email, password } = req.body ?? {};
     const result = loginUser(email, password);
-    res.cookie('token', result.token, COOKIE_OPTS);
     ok(res, result);
   } catch (e) {
     fail(res, 401, msg(e));
@@ -41,7 +43,6 @@ router.post('/login', (req: Request, res: Response) => {
 });
 
 router.post('/logout', (_req: Request, res: Response) => {
-  res.clearCookie('token', { path: '/' });
   ok(res, { success: true });
 });
 

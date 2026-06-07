@@ -7,7 +7,7 @@
 
 import express from 'express';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { registerRoutes } from './routes';
 
 const app = express();
@@ -21,7 +21,16 @@ app.use(
   })
 );
 app.use(express.json());
-app.use(cookieParser());
+
+// Global rate limiter — caps abusive bursts across all routes.
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+  })
+);
 
 app.get('/health', (_req, res) => {
   res.json({ data: { status: 'ok' }, error: null });

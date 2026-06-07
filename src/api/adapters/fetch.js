@@ -2,9 +2,8 @@
  * FetchAdapter — live HTTP adapter using NEXT_PUBLIC_API_BASE_URL.
  * Activated when NEXT_PUBLIC_API_MODE=fetch.
  *
- * Talks to the Express backend in /server. The JWT is sent both via an
- * Authorization header (when held in memory) and via the httpOnly cookie
- * (credentials: 'include').
+ * Talks to the Express backend in /server. The JWT is sent via the
+ * Authorization: Bearer header (held in memory by the client store).
  */
 
 class FetchAdapter {
@@ -20,7 +19,7 @@ class FetchAdapter {
   }
 
   setCurrentUser() {
-    /* no-op: server resolves the user from the JWT cookie */
+    /* no-op: server resolves the user from the Bearer token */
   }
 
   _headers() {
@@ -36,7 +35,6 @@ class FetchAdapter {
     });
     const res = await fetch(url?.toString(), {
       headers: this._headers(),
-      credentials: 'include',
     });
     if (!res?.ok) {
       throw new Error(`FetchAdapter: ${res.status} ${res.statusText} — ${path}`);
@@ -49,7 +47,6 @@ class FetchAdapter {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: this._headers(),
-      credentials: 'include',
       body: body ? JSON.stringify(body) : undefined,
     });
     const json = await res?.json().catch(() => ({}));

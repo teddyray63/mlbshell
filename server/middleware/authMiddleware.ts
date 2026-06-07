@@ -1,9 +1,9 @@
 /**
  * authMiddleware — protects routes that require an authenticated user.
  *
- * Reads the JWT from the httpOnly `token` cookie or the Authorization Bearer
- * header, verifies it, and attaches the resolved user to req.user. Responds
- * 401 when the token is missing or invalid.
+ * Reads the JWT from the Authorization Bearer header, verifies it, and attaches
+ * the resolved user to req.user. Responds 401 when the token is missing or
+ * invalid.
  */
 
 import type { Request, Response, NextFunction } from 'express';
@@ -15,8 +15,6 @@ export interface AuthedRequest extends Request {
 }
 
 function extractToken(req: Request): string | null {
-  const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
-  if (cookies?.token) return cookies.token;
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) return header.slice(7);
   return null;
