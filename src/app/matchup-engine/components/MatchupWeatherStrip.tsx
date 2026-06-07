@@ -1,7 +1,6 @@
 import React from 'react';
 import { Wind, Thermometer, Eye, Droplets, MapPin, AlertTriangle } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 // TODO: Replace with real weather/park data from analyticsService.fetchWeatherAndPark()
 const mockWeather = {
@@ -32,10 +31,6 @@ const mockPark = {
 export default function MatchupWeatherStrip() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="MatchupEngine WeatherStrip"
-        description="Fetch real weather via analyticsService.fetchWeatherAndPark(venue). Park factors come from your park factors endpoint."
-      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Weather card */}
         <div className="card-surface p-4">

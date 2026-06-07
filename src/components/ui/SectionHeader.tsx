@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SectionHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   actions?: React.ReactNode;
   className?: string;

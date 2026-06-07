@@ -18,7 +18,12 @@ import {
   mockAnalyticsData,
   mockPlayerEnrichment,
 } from '../../data/mockProps';
-import { buildMockMatchup } from '../../data/mockMatchup';
+import {
+  buildMockMatchup,
+  buildMockHRTargets,
+  buildMockDeepDive,
+  buildMockDeepDiveList,
+} from '../../data/mockMatchup';
 
 const EDGES_KEY = (userId) => `mlbshell:saved-edges:${userId || 'guest'}`;
 
@@ -92,6 +97,12 @@ class MockAdapter {
           edge: c.edge,
           hitRate: c.hitRate,
           sampleSize: c.sampleSize,
+          l5PaPerG: c.l5PaPerG,
+          nearHr: c.nearHr,
+          hrFbPct: c.hrFbPct,
+          pulledAirPct: c.pulledAirPct,
+          hitRateHits: c.hitRateHits,
+          hitRateGames: c.hitRateGames,
         },
         mockPlayerEnrichment[c.playerId]
       )
@@ -111,6 +122,21 @@ class MockAdapter {
   /** Full matchup payload synthesized from the seed (mirrors fetch-mode shape). */
   async getMatchup(gameId) {
     return buildMockMatchup(gameId);
+  }
+
+  /** HR Targets — probable pitchers ranked by HR/9. */
+  async getHRTargets(_options = {}) {
+    return buildMockHRTargets();
+  }
+
+  /** Player Deep Dive — pitcher season/advanced/game-log payload. */
+  async getDeepDive(playerId) {
+    return buildMockDeepDive(playerId);
+  }
+
+  /** Selectable pitchers for the Player Deep Dive search. */
+  async getDeepDiveList() {
+    return buildMockDeepDiveList();
   }
 
   /** Statcast leaderboard for visual-analytics charts. */

@@ -20,6 +20,8 @@ import {
   LayoutDashboard,
   Trophy,
   Bookmark,
+  Crosshair,
+  UserSearch,
 } from 'lucide-react';
 import AppLogo from './ui/AppLogo';
 
@@ -33,7 +35,6 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // TODO: migrate nav items from existing Vite app router config
   {
     id: 'nav-dashboard',
     label: 'Dashboard',
@@ -89,6 +90,20 @@ const navItems: NavItem[] = [
     label: 'Prop Cheatsheet',
     href: '/prop-cheatsheet',
     icon: <Table size={18} />,
+    group: 'Props',
+  },
+  {
+    id: 'nav-hr-targets',
+    label: 'HR Targets',
+    href: '/hr-targets',
+    icon: <Crosshair size={18} />,
+    group: 'Props',
+  },
+  {
+    id: 'nav-player-deepdive',
+    label: 'Player Deep Dive',
+    href: '/player-deepdive',
+    icon: <UserSearch size={18} />,
     group: 'Props',
   },
   {

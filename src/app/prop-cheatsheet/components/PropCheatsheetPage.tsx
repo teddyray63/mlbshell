@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUp, ArrowDown, ArrowUpDown, LayoutGrid } from 'lucide-react';
 import Topbar from '@/components/Topbar';
@@ -8,6 +8,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
 import StatCell from '@/components/ui/StatCell';
+import SaveEdgeButton from '@/components/ui/SaveEdgeButton';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
@@ -82,6 +83,22 @@ export default function PropCheatsheetPage() {
 
   const [sortKey, setSortKey] = useState<SortKey>('edge');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .getSavedEdges()
+      .then((edges) => {
+        if (active) setSavedIds(new Set(edges.map((e) => e.propId)));
+      })
+      .catch(() => {
+        /* not logged in / no edges */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const loading = props.loading || weather.loading;
 
@@ -218,16 +235,19 @@ export default function PropCheatsheetPage() {
                     </span>
                   </th>
                 ))}
+                <th className="px-2 py-2 text-center font-semibold uppercase tracking-wider text-muted-foreground">
+                  Save
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <TableRowSkeleton key={`skel-${i}`} cols={COLUMNS.length} />
+                  <TableRowSkeleton key={`skel-${i}`} cols={COLUMNS.length + 1} />
                 ))
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={COLUMNS.length}>
+                  <td colSpan={COLUMNS.length + 1}>
                     <EmptyState
                       icon={<LayoutGrid size={28} />}
                       title="No props available for today's slate."
@@ -292,6 +312,21 @@ export default function PropCheatsheetPage() {
                       </td>
                       <td className="px-2 py-2 text-center">
                         <StatusBadge variant={confBadge.variant}>{confBadge.label}</StatusBadge>
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        <SaveEdgeButton
+                          edge={{
+                            propId: `${p.playerId}:${p.statType}`,
+                            player: p.player ?? '',
+                            prop: p.statType,
+                            line: p.line ?? 0,
+                            direction: p.direction ?? 'over',
+                            edge: p.edge,
+                            confidence: p.confidence,
+                          }}
+                          initiallySaved={savedIds.has(`${p.playerId}:${p.statType}`)}
+                          onSaved={(id) => setSavedIds((s) => new Set(s).add(id))}
+                        />
                       </td>
                     </tr>
                   );

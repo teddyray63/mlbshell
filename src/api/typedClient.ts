@@ -16,11 +16,20 @@ import type {
   PublicUser,
   MatchupGame,
   ParkFactor,
+  HRTargetPitcher,
+  PitcherDeepDive,
 } from '../../shared/types';
 
 export interface StatLeaderEntry {
   name: string;
   value: number;
+}
+
+export interface DeepDivePitcher {
+  id: string;
+  name: string;
+  team: string;
+  throws: 'L' | 'R';
 }
 
 export interface AuthResult {
@@ -36,6 +45,9 @@ export interface ApiClient {
   getPropCalculations(): Promise<PropCalculation[]>;
   getPropCalculation(playerId: string): Promise<PropCalculation | null>;
   getMatchup(gameId: string, date?: string): Promise<MatchupGame | null>;
+  getHRTargets(options?: Record<string, unknown>): Promise<HRTargetPitcher[]>;
+  getDeepDive(playerId: string): Promise<PitcherDeepDive | null>;
+  getDeepDiveList(): Promise<DeepDivePitcher[]>;
   getStatcastLeaderboard(stat?: 'barrel' | 'xwoba' | 'exitVelo'): Promise<StatLeaderEntry[]>;
   getParkFactors(venue: string): Promise<ParkFactor | null>;
   getWeather(venue: string): Promise<WeatherCondition | null>;

@@ -1,16 +1,11 @@
 import React from 'react';
 import MetricCard from '@/components/ui/MetricCard';
 import { Crosshair, Zap, BarChart2, TrendingDown } from 'lucide-react';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 // TODO: Replace mock values with real data from analyticsService.fetchAdvancedStats()
 export default function AdvancedAnalyticsKPIs() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="AdvancedAnalytics KPIs"
-        description="Replace hardcoded values below with real stat fetches. Each card maps to a specific MLB Statcast metric."
-      />
       {/* Grid: 4 cards — 4-col single row on lg+, 2×2 on md, 1-col on sm */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard

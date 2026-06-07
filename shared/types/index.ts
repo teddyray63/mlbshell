@@ -64,6 +64,12 @@ export interface PlayerProp {
   hardHitPct?: number;
   xwoba?: number;
   whiffPct?: number;
+  l5PaPerG?: number;
+  nearHr?: number;
+  hrFbPct?: number;
+  pulledAirPct?: number;
+  hitRateHits?: number;
+  hitRateGames?: number;
   edgeVsRHP?: number;
   edgeVsLHP?: number;
   parkFactor?: number;
@@ -182,7 +188,18 @@ export interface MatchupGame {
   venue: string;
   gameTime: string;
   overUnder?: number;
+  overUnderOverOdds?: number;
+  overUnderUnderOdds?: number;
   lineupConfirmed: boolean;
+  // Betting market (propfinder-style game header)
+  homeMoneyline?: number;
+  awayMoneyline?: number;
+  homeRunLine?: number;
+  homeRunLineOdds?: number;
+  awayRunLine?: number;
+  awayRunLineOdds?: number;
+  homeRecord?: string;
+  awayRecord?: string;
   weather: WeatherCondition | null;
   parkFactor: ParkFactor | null;
   pitchers: MatchupPitcher[];
@@ -288,6 +305,148 @@ export interface PropCalculation {
   edgeVsRHP?: number;
   edgeVsLHP?: number;
   parkFactor?: number;
+  // Extended prop-board / analyzer columns (propfinder / doinksports parity)
+  l5PaPerG?: number;
+  nearHr?: number;
+  hrFbPct?: number;
+  pulledAirPct?: number;
+  /** Hits (value ≥ line) within the last 10 logged games — numerator for the "7/10" fraction. */
+  hitRateHits?: number;
+  /** Denominator (logged games considered, ≤10) for the hit-rate fraction. */
+  hitRateGames?: number;
+  opposingPitcher?: string;
+  batterVsPitcher?: BatterVsPitcher;
+  pitcherPanel?: PitcherPanelSplit[];
+  bestLines?: BestLine[];
+}
+
+/** Historical batter-vs-pitcher head-to-head (MLB Stats API vsPlayer split). */
+export interface BatterVsPitcher {
+  pitcher: string;
+  sinceYear: number;
+  ab: number;
+  h: number;
+  hr: number;
+  avg: number;
+  slg: number;
+  kPct: number;
+  brlPct: number;
+}
+
+/** One split row in the Prop Analyzer pitcher panel ('26 Season / Home / Away / vsRHB / vsLHB). */
+export interface PitcherPanelSplit {
+  split: string;
+  era: number;
+  whip: number;
+  oba: number;
+  kPct: number;
+  k9: number;
+  hr9: number;
+  brlPct: number;
+}
+
+/** A sportsbook line for the best-lines strip. */
+export interface BestLine {
+  book: string;
+  line: number;
+  overOdds: number;
+  underOdds: number;
+}
+
+/** A pitcher row on the HR Targets page (gameday-insights Homerun Targets). */
+export interface HRTargetPitcher {
+  playerId: string;
+  name: string;
+  team: string;
+  opp: string;
+  gameTime: string;
+  throws: 'L' | 'R';
+  abs: number;
+  hr: number;
+  absPerHr: number;
+  hr9: number;
+  barrelPct: number;
+  hardHitPct: number;
+  hrFbPct: number;
+  flyBallPct: number;
+  pulledAirPct: number;
+}
+
+/** Season-stat row for the Player Deep Dive page (moonshots player page). */
+export interface PitcherSeasonStats {
+  season: string;
+  g: number;
+  gs: number;
+  w: number;
+  l: number;
+  ip: number;
+  r: number;
+  er: number;
+  h: number;
+  k: number;
+  bb: number;
+  hr: number;
+  era: number;
+  h9: number;
+  k9: number;
+  bb9: number;
+  hr9: number;
+}
+
+/** Advanced-split row (vs L / vs R / Total / % Rank) for the Player Deep Dive page. */
+export interface PitcherAdvancedSplit {
+  split: string;
+  ip?: number;
+  kPct: number;
+  bbPct: number;
+  woba: number;
+  xwoba: number;
+  iso: number;
+  barPerPa: number;
+  barPerBbe: number;
+  babip: number;
+  gbPct: number;
+  ldPct: number;
+  fbPct: number;
+  puPct: number;
+  hard95Pct: number;
+  aev: number;
+  ala: number;
+  hrFb: number;
+}
+
+/** Game-log row for the Player Deep Dive page. */
+export interface PitcherGameLogRow {
+  date: string;
+  opp: string;
+  home: boolean;
+  started: boolean;
+  dkPts: number;
+  pitchCount: number;
+  ip: number;
+  r: number;
+  er: number;
+  h: number;
+  bb: number;
+  k: number;
+  hr: number;
+  velo: number;
+  swstrPct: number;
+  whiffPct: number;
+  woba: number;
+  xwoba: number;
+  iso: number;
+}
+
+/** Full Player Deep Dive payload. */
+export interface PitcherDeepDive {
+  playerId: string;
+  name: string;
+  team: string;
+  throws: 'L' | 'R';
+  season: PitcherSeasonStats[];
+  advancedSplits: PitcherAdvancedSplit[];
+  gameLog: PitcherGameLogRow[];
 }
 
 /** One row in the Prop Analyzer stat breakdown table (Season / Last N / vs pitcher). */

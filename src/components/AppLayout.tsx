@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import AuthGuard from './AuthGuard';
+import Toaster from './ui/Toast';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Sidebar />
         <main className="flex-1 overflow-y-auto scrollbar-thin pb-16 lg:pb-0">{children}</main>
         <MobileNav />
+        <Toaster />
       </div>
     </AuthGuard>
   );

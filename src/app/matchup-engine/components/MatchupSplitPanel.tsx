@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
-import TodoMarker from '@/components/ui/TodoMarker';
 
 const PitcherRadarChart = dynamic(() => import('@/charts/PitcherRadarChart'), {
   ssr: false,
@@ -71,11 +70,6 @@ const batterStats = [
 export default function MatchupSplitPanel() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="MatchupEngine SplitPanel"
-        description="Replace mockPitcher and mockBatter with real data from analyticsService.fetchMatchup(). Advantage score should come from your matchup scoring algorithm."
-      />
-
       {/* Advantage banner */}
       <div className="card-surface p-3 flex items-center justify-between border-l-2 border-primary">
         <div className="flex items-center gap-3">

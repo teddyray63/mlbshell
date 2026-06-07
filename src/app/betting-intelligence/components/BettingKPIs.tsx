@@ -1,16 +1,11 @@
 import React from 'react';
 import MetricCard from '@/components/ui/MetricCard';
-import TodoMarker from '@/components/ui/TodoMarker';
 import { TrendingUp, AlertTriangle, DollarSign, Percent, Activity } from 'lucide-react';
 
 // TODO: Replace mock values with real betting market data from bettingService
 export default function BettingKPIs() {
   return (
     <div className="space-y-3">
-      <TodoMarker
-        pageName="BettingIntelligence KPIs"
-        description="Replace hardcoded values with live prop line feed data. Steam moves and CLV data come from sharp action tracker."
-      />
       {/* 5 cards — hero (span 2) + 4 regular = grid-cols-4 row 1: hero+2, row 2: 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Hero — spans 2 cols on lg+ */}
