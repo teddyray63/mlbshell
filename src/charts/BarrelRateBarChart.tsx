@@ -14,10 +14,10 @@ import {
 
 // TODO: Replace with real batted ball profile data
 const mockData = [
-  { name: 'Groundball',   pct: 0.38 },
-  { name: 'Line Drive',   pct: 0.24 },
-  { name: 'Fly Ball',     pct: 0.29 },
-  { name: 'Pop Up',       pct: 0.09 },
+  { name: 'Groundball', pct: 0.38 },
+  { name: 'Line Drive', pct: 0.24 },
+  { name: 'Fly Ball', pct: 0.29 },
+  { name: 'Pop Up', pct: 0.09 },
 ];
 
 const COLORS = ['var(--muted-foreground)', 'var(--primary)', 'var(--accent)', 'var(--negative)'];
@@ -39,7 +39,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function BarrelRateBarChart({ data = mockData, height = 180 }: BarrelRateBarChartProps) {
+export default function BarrelRateBarChart({
+  data = mockData,
+  height = 180,
+}: BarrelRateBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>

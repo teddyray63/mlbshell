@@ -9,6 +9,8 @@
  * Place frontend-specific types in /client/src/types/
  */
 
+import type { ConfidenceLevel } from '../constants';
+
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
 export interface Game {
@@ -17,6 +19,7 @@ export interface Game {
   awayTeam: string;
   homeScore?: number;
   awayScore?: number;
+  date: string;
   gameTime: string;
   venue: string;
   status: 'scheduled' | 'live' | 'final' | 'postponed';
@@ -84,6 +87,82 @@ export interface AnalyticsCard {
   trend: 'up' | 'down' | 'neutral';
   description?: string;
 }
+
+// ─── Team Ranking ─────────────────────────────────────────────────────────────
+
+export interface TeamRanking {
+  id: string;
+  rank: number;
+  team: string;
+  teamName: string;
+  division: string;
+  wins: number;
+  losses: number;
+  pct: string;
+  gamesBack: string;
+  runsScored: number;
+  runsAllowed: number;
+  runDiff: number;
+  streak?: string;
+  lastTen?: string;
+}
+
+// ─── Prop Calculation ─────────────────────────────────────────────────────────
+
+export interface PropCalculation {
+  playerId: string;
+  statType: string;
+  historicalAvg: number;
+  projectedValue: number;
+  edge: number;
+  confidence: ConfidenceLevel;
+  sampleSize: number;
+  modelVersion: string;
+  // Extended fields surfaced in the UI (Prop Analyzer deep-dive, cheatsheet)
+  player?: string;
+  team?: string;
+  opponent?: string;
+  gameId?: string;
+  line?: number;
+  hitRate?: number;
+  ev?: number;
+  weightedAvg?: number;
+  parkAdjustment?: number;
+  direction?: 'over' | 'under';
+  overOdds?: number;
+  underOdds?: number;
+  gameLog?: GameLogEntry[];
+}
+
+export interface GameLogEntry {
+  date: string;
+  opponent: string;
+  value: number;
+  line?: number;
+  hit?: boolean;
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export interface AnalyticsData {
+  cards: AnalyticsCard[];
+  barrelRate: { name: string; pct: number }[];
+  lineMovement: { time: string; over: number; under: number }[];
+  pitcherRadar: { metric: string; value: number; league: number }[];
+  wobaTrend: { date: string; woba: number }[];
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string;
+  email: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
+/** Public user shape returned to the client (never includes passwordHash). */
+export type PublicUser = Omit<User, 'passwordHash'>;
 
 // ─── API Response ─────────────────────────────────────────────────────────────
 

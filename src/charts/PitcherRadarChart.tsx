@@ -12,11 +12,11 @@ import {
 
 // TODO: Replace with real pitcher profile data from matchupService
 const mockData = [
-  { stat: 'K/9',    value: 78 },
-  { stat: 'BB/9',   value: 62 },
-  { stat: 'FIP',    value: 55 },
-  { stat: 'WHIP',   value: 70 },
-  { stat: 'GB%',    value: 48 },
+  { stat: 'K/9', value: 78 },
+  { stat: 'BB/9', value: 62 },
+  { stat: 'FIP', value: 55 },
+  { stat: 'WHIP', value: 70 },
+  { stat: 'GB%', value: 48 },
   { stat: 'SwStr%', value: 65 },
 ];
 
@@ -35,7 +35,10 @@ const CustomTooltip = ({ active, payload }: any) => {
   );
 };
 
-export default function PitcherRadarChart({ data = mockData, height = 220 }: PitcherRadarChartProps) {
+export default function PitcherRadarChart({
+  data = mockData,
+  height = 220,
+}: PitcherRadarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>

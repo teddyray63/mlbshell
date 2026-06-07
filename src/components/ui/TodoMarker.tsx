@@ -14,9 +14,7 @@ export default function TodoMarker({ pageName, description }: TodoMarkerProps) {
         <p className="text-xs font-semibold text-yellow-400 mb-0.5">
           TODO: Paste your existing {pageName} logic here
         </p>
-        {description && (
-          <p className="text-xs text-gray-400">{description}</p>
-        )}
+        {description && <p className="text-xs text-gray-400">{description}</p>}
       </div>
     </div>
   );

@@ -15,7 +15,10 @@ export default function AdvancedAnalyticsFilters() {
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
       {/* Search */}
       <div className="relative w-full sm:w-64">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           type="text"
           value={search}

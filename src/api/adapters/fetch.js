@@ -2,68 +2,138 @@
  * FetchAdapter — live HTTP adapter using NEXT_PUBLIC_API_BASE_URL.
  * Activated when NEXT_PUBLIC_API_MODE=fetch.
  *
- * TODO: Implement each method body with real fetch calls.
- *       All scraping/heavy processing must live in /server or Next.js API routes.
+ * Talks to the Express backend in /server. The JWT is sent both via an
+ * Authorization header (when held in memory) and via the httpOnly cookie
+ * (credentials: 'include').
  */
 
 class FetchAdapter {
   constructor(config = {}) {
-    this.baseUrl    = config?.baseUrl    || '';
-    this.mlbApiKey  = config?.mlbApiKey  || '';
+    this.baseUrl = config?.baseUrl || '';
+    this.mlbApiKey = config?.mlbApiKey || '';
     this.weatherKey = config?.weatherKey || '';
+    this.authToken = null;
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
+  }
+
+  setCurrentUser() {
+    /* no-op: server resolves the user from the JWT cookie */
+  }
+
+  _headers() {
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.authToken) headers['Authorization'] = `Bearer ${this.authToken}`;
+    return headers;
   }
 
   async _get(path, params = {}) {
     const url = new URL(`${this.baseUrl}${path}`);
-    Object.entries(params)?.forEach(([k, v]) => url?.searchParams?.set(k, v));
-    const res = await fetch(url?.toString(), {
-      headers: {
-        'Authorization': `Bearer ${this.mlbApiKey}`,
-        'Content-Type':  'application/json',
-      },
+    Object.entries(params)?.forEach(([k, v]) => {
+      if (v != null) url?.searchParams?.set(k, v);
     });
-    if (!res?.ok) throw new Error(`FetchAdapter: ${res.status} ${res.statusText} — ${path}`);
-    return res?.json();
+    const res = await fetch(url?.toString(), {
+      headers: this._headers(),
+      credentials: 'include',
+    });
+    if (!res?.ok) {
+      throw new Error(`FetchAdapter: ${res.status} ${res.statusText} — ${path}`);
+    }
+    const json = await res?.json();
+    return json?.data !== undefined ? json.data : json;
+  }
+
+  async _send(method, path, body) {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers: this._headers(),
+      credentials: 'include',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const json = await res?.json().catch(() => ({}));
+    if (!res?.ok) {
+      throw new Error(json?.error || `FetchAdapter: ${res.status} — ${path}`);
+    }
+    return json?.data !== undefined ? json.data : json;
   }
 
   async getPlayers() {
-    // TODO: return this._get('/players');
-    return [];
+    return this._get('/api/players');
   }
 
   async getGames(date) {
-    // TODO: return this._get('/games', { date });
-    return [];
+    return this._get('/api/games', { date });
   }
 
   async getMatchup(pitcherId, batterId) {
-    // TODO: return this._get(`/matchup/${pitcherId}/${batterId}`);
-    return null;
+    return this._get(`/api/matchup/${pitcherId}/${batterId}`);
   }
 
   async getPropLines(gameId) {
-    // TODO: return this._get(`/props/${gameId}`);
-    return [];
+    return this._get('/api/player-props', { gameId });
+  }
+
+  async getPropCalculations() {
+    return this._get('/api/player-props');
+  }
+
+  async getPropCalculation(playerId) {
+    const all = await this.getPropCalculations();
+    return Array.isArray(all) ? all.find((c) => c.playerId === playerId) || null : null;
   }
 
   async getAdvancedStats(playerId, options = {}) {
-    // TODO: return this._get(`/stats/advanced/${playerId}`, options);
-    return null;
+    return this._get(`/api/analytics/advanced-stats`, { playerId, ...options });
+  }
+
+  async getAnalytics() {
+    return this._get('/api/analytics/advanced-stats');
   }
 
   async getBettingLines(gameId) {
-    // TODO: return this._get(`/betting/${gameId}`);
-    return [];
+    return this._get(`/api/betting/${gameId}`);
   }
 
   async getWeather(venue) {
-    // TODO: return this._get('/weather', { venue });
-    return null;
+    return this._get(`/api/weather/${encodeURIComponent(venue)}`);
+  }
+
+  async getAllWeather() {
+    return this._get('/api/weather');
   }
 
   async getParkFactors(parkId) {
-    // TODO: return this._get(`/park/${parkId}/factors`);
-    return null;
+    return this._get(`/api/park/${parkId}/factors`);
+  }
+
+  async getTeamRankings(division) {
+    return this._get('/api/team-rankings', { division });
+  }
+
+  async getSavedEdges() {
+    return this._get('/api/saved-edges');
+  }
+
+  async saveEdge(edge) {
+    return this._send('POST', '/api/saved-edges', edge);
+  }
+
+  async deleteEdge(id) {
+    return this._send('DELETE', `/api/saved-edges/${id}`);
+  }
+
+  async login(email, password) {
+    return this._send('POST', '/api/auth/login', { email, password });
+  }
+
+  async register(email, password) {
+    return this._send('POST', '/api/auth/register', { email, password });
+  }
+
+  async logout() {
+    return this._send('POST', '/api/auth/logout');
   }
 }
 

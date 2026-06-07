@@ -12,9 +12,7 @@ export default function Topbar({ title, subtitle, actions }: TopbarProps) {
     <div className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-card/80 backdrop-blur-sm border-b border-border">
       <div>
         <h1 className="text-lg font-semibold text-foreground leading-tight">{title}</h1>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
         {actions}

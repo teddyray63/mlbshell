@@ -14,7 +14,7 @@ import FetchAdapter from './adapters/fetch';
 const mode = process.env.NEXT_PUBLIC_API_MODE || 'mock';
 
 const adapters = {
-  mock:  MockAdapter,
+  mock: MockAdapter,
   fetch: FetchAdapter,
 };
 
@@ -25,9 +25,9 @@ const SelectedAdapter = adapters?.[mode] || MockAdapter;
  * Use this throughout the app for all data fetching.
  */
 const apiClient = new SelectedAdapter({
-  baseUrl:     process.env.NEXT_PUBLIC_API_BASE_URL || '',
-  mlbApiKey:   process.env.NEXT_PUBLIC_MLB_API_KEY || '',
-  weatherKey:  process.env.NEXT_PUBLIC_WEATHER_API_KEY || '',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+  mlbApiKey: process.env.NEXT_PUBLIC_MLB_API_KEY || '',
+  weatherKey: process.env.NEXT_PUBLIC_WEATHER_API_KEY || '',
 });
 
 export default apiClient;
