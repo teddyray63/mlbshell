@@ -1,13 +1,13 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import VisualAnalyticsPage from './components/VisualAnalyticsPage';
+import StatsPageView from './components/StatsPageView';
 
-export default function VisualAnalyticsRoute() {
+export default function StatsRoute() {
   return (
     <AppLayout>
       <ErrorBoundary>
-        <VisualAnalyticsPage />
+        <StatsPageView />
       </ErrorBoundary>
     </AppLayout>
   );

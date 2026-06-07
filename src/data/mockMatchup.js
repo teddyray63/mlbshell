@@ -511,3 +511,211 @@ export function buildMockDeepDiveList() {
   }
   return out;
 }
+
+// ─── Player page (/players/[playerId]) ───────────────────────────────────────
+
+const TEAMS = ['NYY', 'LAD', 'HOU', 'ATL', 'CHC', 'BOS', 'SF', 'TEX', 'PHI', 'MIL'];
+
+/** Synthesize a full PlayerPage payload deterministically from the player id. */
+export function buildMockPlayerPage(playerId) {
+  const b = hash(String(playerId) + 'pp');
+  const enrich = mockPlayerEnrichment[playerId];
+  const sc = enrich?.statcast || {};
+  const team = TEAMS[Math.floor(b * TEAMS.length)];
+  const opp = TEAMS[Math.floor(hash(playerId + 'opp') * TEAMS.length)];
+  const opps = ['NYM', 'PHI', 'SD', 'COL', 'MIA', 'WSH', 'STL', 'CIN', 'ARI', 'PIT'];
+
+  const gameLog = Array.from({ length: 15 }).map((_, i) => {
+    const g = hash(`${playerId}-bl-${i}`);
+    const ab = 3 + Math.round(g * 2);
+    const h = Math.round(g * 3);
+    const b2 = h > 1 ? Math.round(g) : 0;
+    const hr = g > 0.78 ? 1 : 0;
+    const d = new Date();
+    d.setDate(d.getDate() - (i + 1) * 4);
+    return {
+      date: d.toISOString().slice(0, 10),
+      opp: opps[i % opps.length],
+      home: i % 2 === 0,
+      ab,
+      h,
+      r: Math.round(g * 2),
+      rbi: Math.round(g * 3),
+      b1: Math.max(0, h - b2 - hr),
+      b2,
+      b3: 0,
+      hr,
+      tb: h + b2 + 3 * hr,
+      bb: g > 0.6 ? 1 : 0,
+      k: Math.round(g * 2),
+      sb: 0,
+    };
+  });
+
+  const pitLog = Array.from({ length: 10 }).map((_, i) => {
+    const g = hash(`${playerId}-opl-${i}`);
+    const ip = round(4 + g * 3, 1);
+    const d = new Date();
+    d.setDate(d.getDate() - (i + 1) * 5);
+    return {
+      date: d.toISOString().slice(0, 10),
+      opp: opps[i % opps.length],
+      home: i % 2 === 1,
+      ip,
+      win: g > 0.5,
+      outs: Math.round(ip * 3),
+      h: Math.round(ip * 0.9),
+      er: Math.round(g * 4),
+      bb: Math.round(g * 3),
+      k: Math.round(ip * 1.1),
+      hr: Math.round(g * 2),
+    };
+  });
+
+  const ba = sc.ba ?? round(0.24 + b * 0.06, 3);
+  const slg = sc.slg ?? round(0.4 + b * 0.15, 3);
+  return {
+    playerId: String(playerId),
+    name: enrich?.name || `Player ${playerId}`,
+    team,
+    position: 'OF',
+    bats: b > 0.5 ? 'R' : 'L',
+    throws: 'R',
+    todayOpp: opp,
+    todayTime: '7:05 PM',
+    todayVenue: 'Yankee Stadium',
+    lineupConfirmed: b > 0.5,
+    season: {
+      g: Math.round(40 + b * 20),
+      ab: Math.round(150 + b * 80),
+      h: Math.round((150 + b * 80) * ba),
+      hr: Math.round(slg * 30),
+      rbi: Math.round(30 + b * 30),
+      avg: ba,
+      obp: round(ba + 0.07, 3),
+      slg,
+      ops: round(ba + 0.07 + slg, 3),
+      iso: round(slg - ba, 3),
+      bbPct: round(7 + b * 5, 1),
+      kPct: round(18 + b * 8, 1),
+      woba: sc.woba ?? round(0.32 + b * 0.06, 3),
+      xwoba: sc.xwoba ?? round(0.33 + b * 0.06, 3),
+      exitVelo: sc.exitVelo ?? round(88 + b * 4, 1),
+      barrelPct: sc.barrelPct ?? round(7 + b * 7, 1),
+      hardHitPct: sc.hardHitPct ?? round(36 + b * 12, 1),
+    },
+    gameLog,
+    opposingPitcher: {
+      playerId: '543037',
+      name: 'Probable Pitcher',
+      team: opp,
+      throws: 'R',
+      gameLog: pitLog,
+    },
+    batterVsPitcher: {
+      pitcher: 'Probable Pitcher',
+      sinceYear: 2018,
+      ab: Math.round(4 + b * 12),
+      h: Math.round(b * 5),
+      hr: b > 0.7 ? 1 : 0,
+      avg: round(b * 0.4, 3),
+      slg: round(b * 0.6, 3),
+      kPct: round(15 + b * 15, 1),
+      brlPct: round(b * 10, 1),
+    },
+    bestLines: [
+      { book: 'DK', line: 0.5, overOdds: -130, underOdds: 105 },
+      { book: 'FD', line: 1.5, overOdds: 120, underOdds: -150 },
+    ],
+  };
+}
+
+// ─── Stats page (/stats) ─────────────────────────────────────────────────────
+
+export function buildMockStatsPage() {
+  const hr = buildMockHRTargets();
+  const todaysMatchups = hr.map((p) => {
+    const b = hash(p.playerId + 'm');
+    return {
+      playerId: p.playerId,
+      time: p.gameTime,
+      team: p.team,
+      player: p.name,
+      vs: p.opp,
+      vsHand: 'R',
+      abs: p.abs,
+      siera: round(3.2 + b * 1.6, 2),
+      kPct: round(20 + b * 12, 1),
+      bbPct: round(6 + (1 - b) * 4, 1),
+      avg: round(0.22 + b * 0.05, 3),
+      slg: round(0.36 + b * 0.12, 3),
+      iso: round(0.12 + b * 0.08, 3),
+      hr: p.hr,
+      hr9: p.hr9,
+      exitVelo: round(87 + b * 5, 1),
+      barrelPct: p.barrelPct,
+      hardHitPct: p.hardHitPct,
+      gbPct: round(40 + b * 12, 1),
+      ldPct: round(20 + (1 - b) * 6, 1),
+      fbPct: round(30 + b * 8, 1),
+      pulledAirPct: p.pulledAirPct,
+    };
+  });
+  const pitchingStats = hr.map((p) => {
+    const b = hash(p.playerId + 'p');
+    return {
+      playerId: p.playerId,
+      team: p.team,
+      player: p.name,
+      throws: p.throws,
+      ip: round(60 + b * 60, 1),
+      era: round(2.8 + (1 - b) * 2, 2),
+      whip: round(1.0 + (1 - b) * 0.4, 2),
+      kPct: round(20 + b * 12, 1),
+      bbPct: round(6 + (1 - b) * 4, 1),
+      k9: round(7 + b * 4, 1),
+      hr9: p.hr9,
+      siera: round(3.2 + b * 1.6, 2),
+      oba: round(0.22 + (1 - b) * 0.06, 3),
+      barrelPct: p.barrelPct,
+      hardHitPct: p.hardHitPct,
+    };
+  });
+  const hittingStats = Object.values(mockPlayerEnrichment)
+    .filter((e) => e.statcast)
+    .map((e) => {
+      const s = e.statcast;
+      const b = hash(String(e.mlbId || e.name) + 'h');
+      const ba = s.ba ?? 0.25;
+      const slg = s.slg ?? 0.42;
+      return {
+        playerId: String(e.mlbId || ''),
+        team: e.team || '',
+        player: e.name || '',
+        abs: Math.round(150 + b * 100),
+        hits: Math.round((150 + b * 100) * ba),
+        avg: round(ba, 3),
+        woba: s.woba ?? round(0.32 + b * 0.06, 3),
+        slg: round(slg, 3),
+        iso: round(slg - ba, 3),
+        xbh: Math.round(20 + b * 25),
+        hr: Math.round(slg * 30),
+        ballsLaunched: Math.round(100 + b * 60),
+        hardHitLdFb: Math.round((s.hardHitPct ?? 36) * 0.6),
+        exitVelo: s.exitVelo ?? round(88 + b * 4, 1),
+        barrelPct: s.barrelPct ?? round(7 + b * 7, 1),
+        hardHitPct: s.hardHitPct ?? round(36 + b * 12, 1),
+        gbPct: round(40 + b * 14, 1),
+        ldPct: round(20 + (1 - b) * 6, 1),
+        fbPct: round(30 + b * 8, 1),
+        pulledAirPct: round(28 + b * 20, 1),
+      };
+    });
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    todaysMatchups,
+    hittingStats,
+    pitchingStats,
+    hrTargets: hr,
+  };
+}

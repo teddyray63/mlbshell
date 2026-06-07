@@ -12,6 +12,8 @@ import savedEdgesRouter from './savedEdges';
 import analyticsRouter from './analytics';
 import matchupRouter from './matchup';
 import extrasRouter from './extras';
+import playersRouter from './players';
+import statsRouter from './stats';
 
 export const registerRoutes = (app: Express): void => {
   app.use('/api/auth', authRouter);
@@ -22,9 +24,11 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/saved-edges', savedEdgesRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/matchup', matchupRouter);
+  app.use('/api/players', playersRouter);
+  app.use('/api/stats', statsRouter);
   app.use('/api', extrasRouter);
   console.info(
-    '[Routes] Registered: auth, games, player-props, weather, team-rankings, saved-edges, analytics, matchup, extras'
+    '[Routes] Registered: auth, games, player-props, weather, team-rankings, saved-edges, analytics, matchup, players, stats, extras'
   );
 };
 

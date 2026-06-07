@@ -3,9 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart2, TrendingUp, Activity, CloudRain, LayoutDashboard } from 'lucide-react';
-
-// TODO: migrate MobileNav items from existing Vite app if different routes are used
+import { BarChart2, Calendar, Activity, CloudRain, LayoutDashboard } from 'lucide-react';
 
 interface MobileNavItem {
   id: string;
@@ -22,21 +20,21 @@ const mobileNavItems: MobileNavItem[] = [
     icon: <LayoutDashboard size={20} />,
   },
   {
-    id: 'mobile-analytics',
-    label: 'Analytics',
-    href: '/',
-    icon: <BarChart2 size={20} />,
+    id: 'mobile-games',
+    label: 'Games',
+    href: '/games',
+    icon: <Calendar size={20} />,
   },
   {
-    id: 'mobile-betting',
-    label: 'Betting',
-    href: '/betting-intelligence',
-    icon: <TrendingUp size={20} />,
+    id: 'mobile-stats',
+    label: 'Stats',
+    href: '/stats',
+    icon: <BarChart2 size={20} />,
   },
   {
     id: 'mobile-props',
     label: 'Props',
-    href: '/player-props',
+    href: '/props',
     icon: <Activity size={20} />,
   },
   {

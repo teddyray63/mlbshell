@@ -18,6 +18,8 @@ import type {
   ParkFactor,
   HRTargetPitcher,
   PitcherDeepDive,
+  PlayerPage,
+  StatsPage,
 } from '../../shared/types';
 
 export interface StatLeaderEntry {
@@ -48,6 +50,8 @@ export interface ApiClient {
   getHRTargets(options?: Record<string, unknown>): Promise<HRTargetPitcher[]>;
   getDeepDive(playerId: string): Promise<PitcherDeepDive | null>;
   getDeepDiveList(): Promise<DeepDivePitcher[]>;
+  getPlayerPage(playerId: string): Promise<PlayerPage>;
+  getStatsPage(date?: string): Promise<StatsPage>;
   getStatcastLeaderboard(stat?: 'barrel' | 'xwoba' | 'exitVelo'): Promise<StatLeaderEntry[]>;
   getParkFactors(venue: string): Promise<ParkFactor | null>;
   getWeather(venue: string): Promise<WeatherCondition | null>;
