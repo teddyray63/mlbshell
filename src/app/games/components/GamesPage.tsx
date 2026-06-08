@@ -10,18 +10,12 @@ import EmptyState from '@/components/ui/EmptyState';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
+import { formatGameTime } from '@/utils/formatters';
 import type { Game } from '../../../../shared/types';
 
 type Tab = 'upcoming' | 'live' | 'final';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
-
-function fmtTime(iso: string): string {
-  if (!iso) return 'TBD';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'TBD';
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
 
 export default function GamesPage() {
   const router = useRouter();
@@ -122,7 +116,7 @@ export default function GamesPage() {
                   ) : g.status === 'final' ? (
                     <StatusBadge variant="neutral">Final</StatusBadge>
                   ) : (
-                    <StatusBadge variant="info">{fmtTime(g.gameTime)}</StatusBadge>
+                    <StatusBadge variant="info">{formatGameTime(g.gameTime)}</StatusBadge>
                   )}
                 </div>
 
