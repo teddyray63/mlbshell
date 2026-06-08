@@ -132,7 +132,8 @@ function toGameLog(log: GameStatLog[], line: number): GameLogEntry[] {
 export function calculatePlayerProp(
   input: PlayerPropInput,
   windImpactByGame: Record<string, WeatherCondition['windImpact']>,
-  asOf: Date
+  asOf: Date,
+  gameById?: Record<string, Game>
 ): PropCalculation {
   const { log, line, statType } = input;
 
@@ -155,6 +156,8 @@ export function calculatePlayerProp(
   const ev = calcEV(directionHitRate, odds);
   const confidence = calcConfidence(sampleSize, edge);
 
+  const game = gameById?.[input.gameId];
+
   return {
     playerId: input.playerId,
     statType,
@@ -168,6 +171,9 @@ export function calculatePlayerProp(
     team: input.team,
     opponent: input.opponent,
     gameId: input.gameId,
+    gameTime: game?.gameTime,
+    homeTeam: game?.homeTeam,
+    awayTeam: game?.awayTeam,
     line,
     hitRate: round(hitRate, 3),
     ev: round(ev, 3),
@@ -192,11 +198,11 @@ export function buildPropCalculations(
 ): PropCalculation[] {
   const windImpactByGame: Record<string, WeatherCondition['windImpact']> = {};
   for (const wx of weather) windImpactByGame[wx.gameId] = wx.windImpact;
-  // Games param reserved for venue/date enrichment; referenced to stay in sync.
-  void games;
+  const gameById: Record<string, Game> = {};
+  for (const g of games) gameById[g.id] = g;
 
   return players
-    .map((p) => calculatePlayerProp(p, windImpactByGame, asOf))
+    .map((p) => calculatePlayerProp(p, windImpactByGame, asOf, gameById))
     .sort((a, b) => b.edge - a.edge);
 }
 
