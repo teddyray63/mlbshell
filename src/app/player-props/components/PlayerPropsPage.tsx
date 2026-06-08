@@ -15,7 +15,7 @@ import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
-import { formatEV, formatOdds, formatAvg } from '@/utils/formatters';
+import { formatEV, formatOdds, formatAvg, formatGameTime } from '@/utils/formatters';
 import type { PropCalculation } from '../../../../shared/types';
 import type { ConfidenceLevel } from '../../../../shared/constants';
 
@@ -81,6 +81,7 @@ export default function PlayerPropsPage() {
 
   const [team, setTeam] = useState<string>('all');
   const [prop, setProp] = useState<string>('all');
+  const [game, setGame] = useState<string>('all');
   const [side, setSide] = useState<'all' | 'rhp' | 'lhp'>('all');
   const [pitches, setPitches] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>('edge');
@@ -116,6 +117,26 @@ export default function PlayerPropsPage() {
     [props]
   );
 
+  // GAME filter options derived from the prop slate itself, so selecting a game
+  // always maps to props that exist (the prop universe carries its own game
+  // scheduling info — same slate /api/games serves).
+  const gameOptions = useMemo(() => {
+    const byId = new Map<string, { id: string; label: string; time: string }>();
+    for (const p of props) {
+      if (!p.gameId || byId.has(p.gameId)) continue;
+      const away = p.awayTeam ?? p.opponent ?? '';
+      const home = p.homeTeam ?? p.team ?? '';
+      const matchup = away && home ? `${away} @ ${home}` : (p.team ?? p.gameId);
+      const time = formatGameTime(p.gameTime);
+      byId.set(p.gameId, {
+        id: p.gameId,
+        label: time && time !== '—' ? `${matchup} \u2014 ${time}` : matchup,
+        time,
+      });
+    }
+    return Array.from(byId.values());
+  }, [props]);
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -127,6 +148,7 @@ export default function PlayerPropsPage() {
 
   const filtered = useMemo(() => {
     return props.filter((p) => {
+      if (game !== 'all' && p.gameId !== game) return false;
       if (team !== 'all' && p.team !== team) return false;
       if (prop !== 'all' && p.statType !== prop) return false;
       if (side === 'rhp' && p.handedness === 'R') return false; // RHB sit vs RHP less favorably; keep platoon-friendly
@@ -140,7 +162,7 @@ export default function PlayerPropsPage() {
       }
       return true;
     });
-  }, [props, team, prop, side, pitches]);
+  }, [props, game, team, prop, side, pitches]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -244,6 +266,22 @@ export default function PlayerPropsPage() {
         />
 
         {/* Filters */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold text-muted-foreground">Game</span>
+          <select
+            value={game}
+            onChange={(e) => setGame(e.target.value)}
+            className="appearance-none rounded-md border border-border bg-card px-2.5 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+          >
+            <option value="all">All Games</option>
+            {gameOptions.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 text-xs font-semibold text-muted-foreground">Team</span>

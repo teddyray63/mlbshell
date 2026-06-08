@@ -21,10 +21,10 @@ export function calculateProps(
   weather: WeatherCondition[],
   asOf: Date = new Date()
 ): PropCalculation[] {
-  void games; // reserved for venue/date enrichment
-
   const windImpactByGame: Record<string, WeatherCondition['windImpact']> = {};
   for (const wx of weather) windImpactByGame[wx.gameId] = wx.windImpact;
+  const gameById: Record<string, Game> = {};
+  for (const g of games) gameById[g.id] = g;
 
   const dateKey = asOf.toISOString().slice(0, 10);
 
@@ -32,7 +32,7 @@ export function calculateProps(
     const key = `${p.playerId}:${p.statType}:${dateKey}`;
     const cached = memo.get(key);
     if (cached) return cached;
-    const calc = calculatePlayerProp(p, windImpactByGame, asOf);
+    const calc = calculatePlayerProp(p, windImpactByGame, asOf, gameById);
     memo.set(key, calc);
     return calc;
   });

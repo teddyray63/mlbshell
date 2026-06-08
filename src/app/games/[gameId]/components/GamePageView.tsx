@@ -11,6 +11,7 @@ import PlayerLink from '@/components/ui/PlayerLink';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
+import { formatGameTime } from '@/utils/formatters';
 import type {
   MatchupGame,
   MatchupBatter,
@@ -86,7 +87,7 @@ export default function GamePageView({ gameId }: { gameId: string }) {
     <div className="flex min-h-screen flex-col">
       <Topbar
         title={`${g.awayTeam} @ ${g.homeTeam}`}
-        subtitle={`${g.venue} · ${g.gameTime ? new Date(g.gameTime).toLocaleString() : ''}`}
+        subtitle={`${g.venue} · ${formatGameTime(g.gameTime)}`}
       />
       <div className="mx-auto w-full max-w-screen-2xl flex-1 space-y-4 px-6 py-5">
         <GameHeaderBar g={g} />

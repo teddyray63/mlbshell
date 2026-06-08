@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import PlayerLink from '@/components/ui/PlayerLink';
 import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import apiClient from '@/api/typedClient';
-import { formatAvg, formatOdds } from '@/utils/formatters';
+import { formatAvg, formatOdds, formatGameTime } from '@/utils/formatters';
 import type { Game, MatchupGame, MatchupPitcher, MatchupBatter } from '../../../../shared/types';
 
 type Tab = 'splits' | 'arsenal';
@@ -229,7 +229,7 @@ export default function MatchupEnginePage() {
             >
               {games.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.awayTeam} @ {g.homeTeam} — {g.gameTime}
+                  {g.awayTeam} @ {g.homeTeam} — {formatGameTime(g.gameTime)}
                 </option>
               ))}
             </select>
@@ -264,7 +264,7 @@ export default function MatchupEnginePage() {
                   </StatusBadge>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {matchup.venue} · {matchup.gameTime}
+                  {matchup.venue} · {formatGameTime(matchup.gameTime)}
                   {matchup.parkFactor && (
                     <span className="ml-2">
                       · Park Factor{' '}

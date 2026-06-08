@@ -285,6 +285,11 @@ export interface PropCalculation {
   team?: string;
   opponent?: string;
   gameId?: string;
+  /** Game scheduling info copied from the slate so the prop board can build a
+   * GAME filter dropdown without a separate id-matching round-trip. */
+  gameTime?: string;
+  homeTeam?: string;
+  awayTeam?: string;
   line?: number;
   hitRate?: number;
   ev?: number;
