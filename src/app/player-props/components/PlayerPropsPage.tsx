@@ -10,6 +10,8 @@ import FilterChip from '@/components/ui/FilterChip';
 import EmptyState from '@/components/ui/EmptyState';
 import StatCell from '@/components/ui/StatCell';
 import SaveEdgeButton from '@/components/ui/SaveEdgeButton';
+import PlayerLink from '@/components/ui/PlayerLink';
+import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
@@ -363,12 +365,23 @@ export default function PlayerPropsPage() {
                   return (
                     <tr
                       key={p.playerId}
-                      onClick={() => router.push(`/players/${p.playerId}`)}
+                      onClick={() => router.push(`/players/${p.mlbId ?? p.playerId}`)}
                       className="cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/20"
                     >
                       <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">
-                        {p.player}
-                        <span className="ml-1.5 font-normal text-muted-foreground">{p.team}</span>
+                        <span className="inline-flex items-center gap-2">
+                          <PlayerPhoto
+                            playerId={p.mlbId ?? p.playerId}
+                            alt={p.player ?? ''}
+                            size={32}
+                          />
+                          <span>
+                            <PlayerLink playerId={p.mlbId ?? p.playerId} name={p.player ?? ''} />
+                            <span className="ml-1.5 font-normal text-muted-foreground">
+                              {p.team}
+                            </span>
+                          </span>
+                        </span>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {p.statType}

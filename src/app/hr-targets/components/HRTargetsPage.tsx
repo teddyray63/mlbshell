@@ -7,6 +7,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import FilterChip from '@/components/ui/FilterChip';
 import StatCell from '@/components/ui/StatCell';
 import EmptyState from '@/components/ui/EmptyState';
+import PlayerLink from '@/components/ui/PlayerLink';
+import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
@@ -239,7 +241,13 @@ export default function HRTargetsPage() {
                       </td>
                       <td className="px-2 py-1.5 text-left text-muted-foreground">{r.team}</td>
                       <td className="px-2 py-1.5 text-left font-semibold text-foreground">
-                        {r.name} <StatusBadge variant="neutral">{r.throws}HP</StatusBadge>
+                        <span className="inline-flex items-center gap-2">
+                          <PlayerPhoto playerId={r.playerId} alt={r.name} size={32} />
+                          <span>
+                            <PlayerLink playerId={r.playerId} name={r.name} />{' '}
+                            <StatusBadge variant="neutral">{r.throws}HP</StatusBadge>
+                          </span>
+                        </span>
                       </td>
                       <td className="px-2 py-1.5 text-center text-muted-foreground">{r.opp}</td>
                       <td className="px-2 py-1.5 text-right font-mono-data text-muted-foreground">

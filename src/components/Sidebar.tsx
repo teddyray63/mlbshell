@@ -19,6 +19,8 @@ import {
   Bookmark,
   Crosshair,
   UserSearch,
+  Filter,
+  ListChecks,
 } from 'lucide-react';
 import AppLogo from './ui/AppLogo';
 
@@ -72,6 +74,20 @@ const navItems: NavItem[] = [
     label: 'HR Targets',
     href: '/hr-targets',
     icon: <Crosshair size={18} />,
+    group: 'Props',
+  },
+  {
+    id: 'nav-gate-filter',
+    label: 'Gate Filter',
+    href: '/gate-filter',
+    icon: <Filter size={18} />,
+    group: 'Props',
+  },
+  {
+    id: 'nav-daily-workflow',
+    label: 'Daily Workflow',
+    href: '/daily-workflow',
+    icon: <ListChecks size={18} />,
     group: 'Props',
   },
   {

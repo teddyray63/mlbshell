@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bookmark, CloudSun, Wind, ArrowRight } from 'lucide-react';
 import Topbar from '@/components/Topbar';
@@ -133,9 +134,12 @@ export default function DashboardPage() {
                   <li key={g.id} className="flex items-center justify-between py-2 text-xs">
                     <div className="flex items-center gap-3">
                       <span className="font-mono-data text-muted-foreground">{g.gameTime}</span>
-                      <span className="font-medium text-foreground">
+                      <Link
+                        href={`/games/${g.id}`}
+                        className="font-medium text-foreground hover:text-primary hover:underline"
+                      >
                         {g.awayTeam} @ {g.homeTeam}
-                      </span>
+                      </Link>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">{g.venue}</span>

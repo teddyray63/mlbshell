@@ -14,6 +14,7 @@ import matchupRouter from './matchup';
 import extrasRouter from './extras';
 import playersRouter from './players';
 import statsRouter from './stats';
+import gateFilterRouter from './gateFilter';
 
 export const registerRoutes = (app: Express): void => {
   app.use('/api/auth', authRouter);
@@ -26,9 +27,10 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/matchup', matchupRouter);
   app.use('/api/players', playersRouter);
   app.use('/api/stats', statsRouter);
+  app.use('/api/gate-filter', gateFilterRouter);
   app.use('/api', extrasRouter);
   console.info(
-    '[Routes] Registered: auth, games, player-props, weather, team-rankings, saved-edges, analytics, matchup, players, stats, extras'
+    '[Routes] Registered: auth, games, player-props, weather, team-rankings, saved-edges, analytics, matchup, players, stats, gate-filter, extras'
   );
 };
 

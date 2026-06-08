@@ -92,6 +92,10 @@ class FetchAdapter {
     return this._get('/api/stats', { date });
   }
 
+  async getGateVerdicts() {
+    return this._get('/api/gate-filter');
+  }
+
   async getPropLines(gameId) {
     return this._get('/api/player-props', { gameId });
   }
