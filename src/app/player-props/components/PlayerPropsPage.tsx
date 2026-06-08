@@ -370,7 +370,11 @@ export default function PlayerPropsPage() {
                     >
                       <td className="whitespace-nowrap px-3 py-2 font-medium text-foreground">
                         <span className="inline-flex items-center gap-2">
-                          <PlayerPhoto playerId={p.mlbId ?? p.playerId} alt={p.player ?? ''} size={32} />
+                          <PlayerPhoto
+                            playerId={p.mlbId ?? p.playerId}
+                            alt={p.player ?? ''}
+                            size={32}
+                          />
                           <span>
                             <PlayerLink playerId={p.mlbId ?? p.playerId} name={p.player ?? ''} />
                             <span className="ml-1.5 font-normal text-muted-foreground">

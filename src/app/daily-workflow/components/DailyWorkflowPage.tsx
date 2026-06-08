@@ -18,7 +18,13 @@ const SECTIONS = [
   { id: 2, title: 'Pitcher Splits', window: '11:00 AM', gate: 'Gate 3', unlock: 11 * 60 },
   { id: 3, title: 'Pitch Arsenal', window: '11:15 AM', gate: 'Gate 4', unlock: 11 * 60 + 15 },
   { id: 4, title: 'Batter Model', window: 'Post-Lineup', gate: 'Gates 2+5', unlock: 15 * 60 },
-  { id: 5, title: 'Savant Confirmation', window: 'Final 30 Min', gate: 'Gate 6', unlock: 18 * 60 + 30 },
+  {
+    id: 5,
+    title: 'Savant Confirmation',
+    window: 'Final 30 Min',
+    gate: 'Gate 6',
+    unlock: 18 * 60 + 30,
+  },
   { id: 6, title: 'Bet Placement', window: 'First Pitch', gate: 'Final', unlock: 19 * 60 },
 ];
 
@@ -40,8 +46,7 @@ const envStatus = (wx: WeatherCondition | undefined): { label: string; cls: stri
   if (!wx) return { label: 'YELLOW', cls: 'text-amber-400' };
   if (wx.temp >= 80 && wx.windImpact === 'boost')
     return { label: 'GREEN', cls: 'text-emerald-400' };
-  if (wx.temp < 65 || wx.windImpact === 'suppress')
-    return { label: 'RED', cls: 'text-red-400' };
+  if (wx.temp < 65 || wx.windImpact === 'suppress') return { label: 'RED', cls: 'text-red-400' };
   return { label: 'YELLOW', cls: 'text-amber-400' };
 };
 
@@ -132,7 +137,9 @@ export default function DailyWorkflowPage() {
                         {wx ? `${wx.windSpeed}mph` : '—'}
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{wx?.windDir ?? '—'}</td>
-                      <td className="px-2 py-1.5 tabular-nums">{wx ? wx.parkFactor.toFixed(2) : '—'}</td>
+                      <td className="px-2 py-1.5 tabular-nums">
+                        {wx ? wx.parkFactor.toFixed(2) : '—'}
+                      </td>
                       <td className={`px-2 py-1.5 font-semibold ${st.cls}`}>{st.label}</td>
                     </tr>
                   );
@@ -161,7 +168,9 @@ export default function DailyWorkflowPage() {
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{v.team}</td>
                       <td className="px-2 py-1.5">{v.prop}</td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">{d?.reason ?? '—'}</td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {d?.reason ?? '—'}
+                      </td>
                       <td className="px-2 py-1.5 text-center">{d ? gateIcon(d.result) : '—'}</td>
                     </tr>
                   );
@@ -187,7 +196,9 @@ export default function DailyWorkflowPage() {
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{v.team}</td>
                       <td className="px-2 py-1.5">{v.prop}</td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">{d?.reason ?? '—'}</td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {d?.reason ?? '—'}
+                      </td>
                       <td className="px-2 py-1.5 text-center">{d ? gateIcon(d.result) : '—'}</td>
                     </tr>
                   );
@@ -211,7 +222,9 @@ export default function DailyWorkflowPage() {
                 <WorkflowTable head={['PLAYER', 'TEAM', 'PROP TYPE', 'BATTER MODEL', 'QUALIFIES']}>
                   {[...vs]
                     .map((v) => ({ v, d: gateDetail(v, 5) }))
-                    .sort((a, b) => (b.d?.result === 'pass' ? 1 : 0) - (a.d?.result === 'pass' ? 1 : 0))
+                    .sort(
+                      (a, b) => (b.d?.result === 'pass' ? 1 : 0) - (a.d?.result === 'pass' ? 1 : 0)
+                    )
                     .map(({ v, d }) => (
                       <tr key={`${v.playerId}-${v.prop}`} className="border-b border-border/50">
                         <td className="px-2 py-1.5 font-medium text-foreground">
@@ -219,7 +232,9 @@ export default function DailyWorkflowPage() {
                         </td>
                         <td className="px-2 py-1.5 text-muted-foreground">{v.team}</td>
                         <td className="px-2 py-1.5">{v.prop}</td>
-                        <td className="px-2 py-1.5 text-xs text-muted-foreground">{d?.reason ?? '—'}</td>
+                        <td className="px-2 py-1.5 text-xs text-muted-foreground">
+                          {d?.reason ?? '—'}
+                        </td>
                         <td className="px-2 py-1.5 text-center">{d ? gateIcon(d.result) : '—'}</td>
                       </tr>
                     ))}
@@ -245,7 +260,9 @@ export default function DailyWorkflowPage() {
                       </td>
                       <td className="px-2 py-1.5 text-muted-foreground">{v.team}</td>
                       <td className="px-2 py-1.5">{v.prop}</td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">{d?.reason ?? '—'}</td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
+                        {d?.reason ?? '—'}
+                      </td>
                       <td className="px-2 py-1.5 text-center">{d ? gateIcon(d.result) : '—'}</td>
                     </tr>
                   );

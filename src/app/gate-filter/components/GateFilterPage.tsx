@@ -218,7 +218,9 @@ export default function GateFilterPage() {
                         </td>
                         <td className="px-2 py-2 text-muted-foreground">{v.team}</td>
                         <td className="px-2 py-2 text-foreground">{v.prop}</td>
-                        <td className="px-2 py-2 text-right tabular-nums text-foreground">{v.line}</td>
+                        <td className="px-2 py-2 text-right tabular-nums text-foreground">
+                          {v.line}
+                        </td>
                         {v.gates.map((g, i) => (
                           <td key={i} className="px-2 py-2 text-center">
                             {gateIcon(g)}
@@ -247,7 +249,9 @@ export default function GateFilterPage() {
                                     </span>
                                     <span>{gateIcon(d.result)}</span>
                                   </div>
-                                  <div className="mt-1 text-xs text-muted-foreground">{d.reason}</div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    {d.reason}
+                                  </div>
                                 </div>
                               ))}
                             </div>
