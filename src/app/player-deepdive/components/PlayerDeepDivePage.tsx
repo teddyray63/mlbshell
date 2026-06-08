@@ -8,6 +8,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import StatCell from '@/components/ui/StatCell';
 import FilterChip from '@/components/ui/FilterChip';
+import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import EmptyState from '@/components/ui/EmptyState';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient, { type DeepDivePitcher } from '@/api/typedClient';
@@ -135,6 +136,7 @@ export default function PlayerDeepDivePage() {
           <>
             {/* Header */}
             <div className="card-surface flex flex-wrap items-center gap-3 p-5">
+              <PlayerPhoto playerId={playerId} alt={data.name} size={80} />
               <h2 className="text-xl font-bold text-foreground">{data.name}</h2>
               <StatusBadge variant="neutral">{data.team}</StatusBadge>
               <StatusBadge variant="info">{data.throws}HP</StatusBadge>

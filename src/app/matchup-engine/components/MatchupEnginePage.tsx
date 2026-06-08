@@ -8,6 +8,8 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import FilterChip from '@/components/ui/FilterChip';
 import StatCell from '@/components/ui/StatCell';
 import EmptyState from '@/components/ui/EmptyState';
+import PlayerLink from '@/components/ui/PlayerLink';
+import PlayerPhoto from '@/components/ui/PlayerPhoto';
 import apiClient from '@/api/typedClient';
 import { formatAvg, formatOdds } from '@/utils/formatters';
 import type { Game, MatchupGame, MatchupPitcher, MatchupBatter } from '../../../../shared/types';
@@ -360,6 +362,9 @@ export default function MatchupEnginePage() {
             <div className="card-surface p-4 space-y-3">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3 flex-wrap">
+                  {pitcher && (
+                    <PlayerPhoto playerId={pitcher.playerId} alt={pitcher.name} size={48} />
+                  )}
                   <div className="relative">
                     <select
                       value={pitcherIdx}
@@ -695,7 +700,7 @@ export default function MatchupEnginePage() {
                           {b.battingOrder ?? i + 1}
                         </td>
                         <td className="px-2 py-1.5 font-semibold text-foreground text-left">
-                          {b.name}
+                          <PlayerLink playerId={b.playerId} name={b.name} />
                         </td>
                         <td className="px-2 py-1.5 text-center text-muted-foreground">
                           {b.handedness}

@@ -9,6 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
 import StatCell from '@/components/ui/StatCell';
 import SaveEdgeButton from '@/components/ui/SaveEdgeButton';
+import PlayerLink from '@/components/ui/PlayerLink';
 import { TableRowSkeleton } from '@/components/ui/LoadingSkeleton';
 import apiClient from '@/api/typedClient';
 import { useApi } from '@/hooks/useApi';
@@ -273,7 +274,7 @@ export default function PropCheatsheetPage() {
                       className="cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/20"
                     >
                       <td className="whitespace-nowrap px-2 py-2 font-medium text-foreground">
-                        {p.player}
+                        <PlayerLink playerId={p.playerId} name={p.player ?? ''} />
                         <span className="ml-1.5 font-normal text-muted-foreground">{p.team}</span>
                       </td>
                       <td className="px-2 py-2 text-muted-foreground">
