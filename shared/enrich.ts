@@ -222,6 +222,7 @@ export function enrichCalculation(
   return {
     ...calc,
     ...flat,
+    mlbId: enr.mlbId,
     position: enr.position,
     statcast,
     splitRows: statcast ? buildSplitRows(statcast) : undefined,
@@ -251,5 +252,5 @@ export function enrichPlayerProp(
 ): PlayerProp {
   if (!enr) return prop;
   const statcast = live ?? enr.statcast;
-  return { ...prop, ...flatFields(prop.edge ?? 0, enr, statcast) };
+  return { ...prop, mlbId: enr.mlbId, ...flatFields(prop.edge ?? 0, enr, statcast) };
 }

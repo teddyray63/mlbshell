@@ -45,6 +45,8 @@ export interface Player {
 export interface PlayerProp {
   id: string;
   playerId: string;
+  /** Numeric MLB person id (from enrichment) used for player links/photos. */
+  mlbId?: string;
   player: string;
   team: string;
   opponent: string;
@@ -269,6 +271,8 @@ export interface TeamRanking {
 
 export interface PropCalculation {
   playerId: string;
+  /** Numeric MLB person id (from enrichment) used for player links/photos. */
+  mlbId?: string;
   statType: string;
   historicalAvg: number;
   projectedValue: number;
@@ -682,4 +686,28 @@ export interface SavedEdge {
   confidence: 'high' | 'medium' | 'low';
   savedAt: string;
   notes?: string;
+}
+
+// ── Six-Gate Filter System (gate-filter page + /api/gate-filter) ──────────────
+export type GateResult = 'pass' | 'warn' | 'fail';
+
+export interface GateDetail {
+  gate: number;
+  name: string;
+  result: GateResult;
+  reason: string;
+}
+
+export interface PropVerdict {
+  playerId: string;
+  player: string;
+  team: string;
+  prop: string;
+  line: number;
+  /** Per-gate results, index 0 = Gate 1 … index 5 = Gate 6. */
+  gates: GateResult[];
+  gateDetails: GateDetail[];
+  verdict: 'NUCLEAR' | 'PASS' | 'FAIL';
+  tier: 'S' | 'A' | 'B' | 'C';
+  unit: number;
 }

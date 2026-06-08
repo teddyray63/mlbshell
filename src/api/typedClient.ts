@@ -20,6 +20,7 @@ import type {
   PitcherDeepDive,
   PlayerPage,
   StatsPage,
+  PropVerdict,
 } from '../../shared/types';
 
 export interface StatLeaderEntry {
@@ -52,6 +53,7 @@ export interface ApiClient {
   getDeepDiveList(): Promise<DeepDivePitcher[]>;
   getPlayerPage(playerId: string): Promise<PlayerPage>;
   getStatsPage(date?: string): Promise<StatsPage>;
+  getGateVerdicts(): Promise<PropVerdict[]>;
   getStatcastLeaderboard(stat?: 'barrel' | 'xwoba' | 'exitVelo'): Promise<StatLeaderEntry[]>;
   getParkFactors(venue: string): Promise<ParkFactor | null>;
   getWeather(venue: string): Promise<WeatherCondition | null>;

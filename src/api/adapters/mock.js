@@ -9,6 +9,7 @@
 
 import { buildPropCalculations } from '../../../shared/propMath';
 import { enrichCalculation, enrichPlayerProp } from '../../../shared/enrich';
+import { buildGateVerdicts } from '../../../shared/gateLogic';
 import {
   mockGameList,
   mockWeatherList,
@@ -149,6 +150,11 @@ class MockAdapter {
   /** Stats page (today's matchups, hitting, pitching, HR targets) — mock mode. */
   async getStatsPage(_date) {
     return buildMockStatsPage();
+  }
+
+  /** Six-Gate Filter verdicts for today's slate — mock mode. */
+  async getGateVerdicts() {
+    return buildGateVerdicts(this._calcs(), mockWeatherList, mockGameList);
   }
 
   /** Statcast leaderboard for visual-analytics charts. */
