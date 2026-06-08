@@ -67,13 +67,27 @@ export default function DailyWorkflowPage() {
   const loading = games.loading || weather.loading || verdicts.loading;
   const error = games.error || weather.error || verdicts.error;
 
-  const wxByVenue = useMemo(() => {
-    const m: Record<string, WeatherCondition> = {};
-    for (const w of weather.data ?? []) m[w.venue] = w;
-    return m;
-  }, [weather.data]);
-
   const vs = useMemo(() => verdicts.data ?? [], [verdicts.data]);
+
+  // Match a game (live schedule) or the verdict teams to each weather venue so
+  // Section 1 shows a real matchup label alongside the environment metrics.
+  const gameLabelByVenue = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const g of games.data ?? []) m[g.venue] = `${g.awayTeam} @ ${g.homeTeam}`;
+    return m;
+  }, [games.data]);
+
+  const teamsByVenueFromVerdicts = useMemo(() => {
+    const m: Record<string, Set<string>> = {};
+    for (const v of vs) {
+      const venue = v.gateDetails.find((d) => d.gate === 1)?.reason.match(/\(([^)]+)\)/)?.[1];
+      if (!venue) continue;
+      (m[venue] ??= new Set()).add(v.team);
+    }
+    return m;
+  }, [vs]);
+
+  const envRows = useMemo(() => weather.data ?? [], [weather.data]);
 
   // Section 6 — final ranked plays (not failed), ordered by prop priority then unit.
   const finalPlays = useMemo(() => {
@@ -123,23 +137,21 @@ export default function DailyWorkflowPage() {
               <WorkflowTable
                 head={['GAME', 'VENUE', 'TEMP', 'WIND', 'DIRECTION', 'PARK', 'STATUS']}
               >
-                {(games.data ?? []).map((g) => {
-                  const wx = wxByVenue[g.venue];
+                {envRows.map((wx) => {
                   const st = envStatus(wx);
+                  const label =
+                    gameLabelByVenue[wx.venue] ??
+                    (teamsByVenueFromVerdicts[wx.venue]
+                      ? Array.from(teamsByVenueFromVerdicts[wx.venue]).join(' / ')
+                      : '—');
                   return (
-                    <tr key={g.id} className="border-b border-border/50">
-                      <td className="px-2 py-1.5 text-foreground">
-                        {g.awayTeam} @ {g.homeTeam}
-                      </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">{g.venue}</td>
-                      <td className="px-2 py-1.5 tabular-nums">{wx ? `${wx.temp}°` : '—'}</td>
-                      <td className="px-2 py-1.5 tabular-nums">
-                        {wx ? `${wx.windSpeed}mph` : '—'}
-                      </td>
-                      <td className="px-2 py-1.5 text-muted-foreground">{wx?.windDir ?? '—'}</td>
-                      <td className="px-2 py-1.5 tabular-nums">
-                        {wx ? wx.parkFactor.toFixed(2) : '—'}
-                      </td>
+                    <tr key={wx.venue} className="border-b border-border/50">
+                      <td className="px-2 py-1.5 text-foreground">{label}</td>
+                      <td className="px-2 py-1.5 text-muted-foreground">{wx.venue}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{wx.temp}°</td>
+                      <td className="px-2 py-1.5 tabular-nums">{wx.windSpeed}mph</td>
+                      <td className="px-2 py-1.5 text-muted-foreground">{wx.windDir}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{wx.parkFactor.toFixed(2)}</td>
                       <td className={`px-2 py-1.5 font-semibold ${st.cls}`}>{st.label}</td>
                     </tr>
                   );
